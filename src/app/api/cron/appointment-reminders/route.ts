@@ -4,9 +4,10 @@ import { triggerAppointmentReminderCall } from "@/lib/agent-tools/outbound";
 
 const REMINDER_WINDOW_HOURS = 24;
 
-// Vercel Cron her saat başı bu route'u çağırır (bkz. vercel.json).
-// Randevusuna ~24 saat kalan ve henüz hatırlatma araması yapılmamış
-// randevular için otomatik hatırlatma/onay araması başlatır.
+// Vercel Cron bu route'u günde bir kez çağırır (bkz. vercel.json — Hobby planı
+// yalnızca günlük cron'a izin verir). 24 saatlik pencere sayesinde ardışık
+// günler boşluksuz kapsanır: sonraki 24 saat içindeki, henüz hatırlatma araması
+// yapılmamış randevular için otomatik hatırlatma/onay araması başlatır.
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
