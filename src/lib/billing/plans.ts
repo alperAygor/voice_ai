@@ -40,9 +40,22 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
 };
 
 export const DEFAULT_PLAN_ID: PlanId = "starter";
+export const DEFAULT_PLAN = PLANS[DEFAULT_PLAN_ID];
 
 export function isPlanId(value: unknown): value is PlanId {
   return value === "starter" || value === "pro";
+}
+
+export function getPlanDefinition(planId: PlanId = DEFAULT_PLAN_ID): PlanDefinition {
+  return PLANS[planId];
+}
+
+export function getPlanPriceId(
+  planId: PlanId,
+  env: Record<string, string | undefined>
+): string | null {
+  const priceId = env[PLANS[planId].stripePriceEnvVar];
+  return priceId && priceId.trim() ? priceId : null;
 }
 
 // WhatsApp/SMS gibi özelliklerin plana göre açık olup olmadığını döndürür.

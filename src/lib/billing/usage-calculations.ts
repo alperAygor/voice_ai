@@ -1,5 +1,7 @@
-export const PLAN_INCLUDED_MINUTES = 300;
-export const OVERAGE_RATE_USD = 1.5;
+import { DEFAULT_PLAN } from "./plans";
+
+export const PLAN_INCLUDED_MINUTES = DEFAULT_PLAN.includedMinutes;
+export const OVERAGE_RATE_USD = DEFAULT_PLAN.overageRateUsd;
 
 export type UsageSnapshot = {
   id?: string;

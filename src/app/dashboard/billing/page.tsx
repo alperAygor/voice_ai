@@ -3,6 +3,7 @@ import { BillingActions } from "./billing-actions";
 import { getBillingMonth, PLAN_INCLUDED_MINUTES, OVERAGE_RATE_USD } from "@/lib/billing/usage";
 import { getInvoiceStatusLabel, type BillingInvoice } from "@/lib/billing/invoice-format";
 import { listCustomerInvoices } from "@/lib/stripe";
+import { DEFAULT_PLAN } from "@/lib/billing/plans";
 
 export default async function BillingPage() {
   const supabase = await createClient();
@@ -29,7 +30,7 @@ export default async function BillingPage() {
 
   const minutesUsed = Number(usage?.total_minutes ?? 0);
   const overageCostUsd = Number(usage?.overage_cost_usd ?? 0);
-  const minutesLimit = PLAN_INCLUDED_MINUTES;
+  const minutesLimit = DEFAULT_PLAN.includedMinutes;
   const progressPercent = Math.min(100, Math.max(0, (minutesUsed / minutesLimit) * 100));
   const isOverLimit = minutesUsed > minutesLimit;
   
@@ -56,7 +57,7 @@ export default async function BillingPage() {
           <h2 className="text-base font-medium text-gray-900">Mevcut Plan</h2>
           
           <div className="mt-4 flex items-center justify-between">
-            <span className="text-2xl font-bold text-gray-900">Pro</span>
+            <span className="text-2xl font-bold text-gray-900">{DEFAULT_PLAN.name}</span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
               hasSubscription 
                 ? "bg-green-100 text-green-800" 
@@ -69,10 +70,10 @@ export default async function BillingPage() {
           </div>
           
           <p className="mt-2 text-sm text-gray-500">
-            $149/ay • 300 dakika dahil
+            ${DEFAULT_PLAN.priceUsd}/ay • {PLAN_INCLUDED_MINUTES} dakika dahil
           </p>
           
-          <BillingActions hasSubscription={hasSubscription} />
+          <BillingActions hasSubscription={hasSubscription} planPriceUsd={DEFAULT_PLAN.priceUsd} />
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">

@@ -146,8 +146,9 @@ WhatsApp onayları istiyorsan opsiyonel `TWILIO_WHATSAPP_FROM=whatsapp:+14155238
 ### 4.4 Stripe (abonelik)
 [Stripe Dashboard](https://dashboard.stripe.com) (önce **Test mode**):
 1. **Developers → API keys** → Secret key → `STRIPE_SECRET_KEY`.
-2. **Products** → yeni ürün ("Pro", $149/ay, aylık recurring) → oluşan **Price ID**
-   (`price_...`) → `STRIPE_PRICE_ID`.
+2. **Products** → iki aylık recurring price oluştur:
+   - Starter, $99/ay → `STRIPE_PRICE_ID_STARTER`
+   - Pro, $199/ay → `STRIPE_PRICE_ID_PRO`
 3. Webhook secret'ı Adım 6.2'de alacaksın → `STRIPE_WEBHOOK_SECRET`.
 
 ### 4.5 Anthropic (görüşme özeti/analiz)
@@ -173,7 +174,7 @@ prompt caching aktiftir.)
 3. **Root Directory**: repoyu nasıl push ettiğine göre `.` veya `app` (bkz. Adım 2).
 4. **Environment Variables**: aşağıdaki tüm zorunlu değerleri gir. `NEXT_PUBLIC_APP_URL`
    için şimdilik tahmini domain'i gir; ilk deploy'dan sonra gerçek domain'le güncelle.
-5. **Deploy**. Build `next build` ile çalışır (lokalde de doğrulandı).
+5. **Deploy**. Vercel build komutu `npm run build` (`next build --webpack`).
 
 **Zorunlu environment değerleri:**
 
@@ -197,7 +198,8 @@ GOOGLE_CLIENT_SECRET=
 
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_ID=
+STRIPE_PRICE_ID_STARTER=
+STRIPE_PRICE_ID_PRO=
 
 ANTHROPIC_API_KEY=
 CRON_SECRET=
@@ -293,7 +295,8 @@ Sırayla elle doğrula:
 - **Anahtar rotasyonu**: bir anahtar sızarsa ilgili serviste yenile, Vercel'de
   güncelle, redeploy et.
 - **Stripe canlıya alma**: test yerine **live** anahtarlarına geç, live webhook
-  endpoint'ini yeniden oluştur, `STRIPE_PRICE_ID`'yi live ürünle güncelle.
+  endpoint'ini yeniden oluştur, `STRIPE_PRICE_ID_STARTER` ve
+  `STRIPE_PRICE_ID_PRO` değerlerini live ürünlerle güncelle.
 - **Migration'lar**: yeni migration eklendikçe production Supabase'e de sırayla uygula.
 
 ---

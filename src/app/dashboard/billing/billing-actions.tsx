@@ -2,7 +2,13 @@
 
 import React, { useState } from "react";
 
-export function BillingActions({ hasSubscription }: { hasSubscription: boolean }) {
+export function BillingActions({
+  hasSubscription,
+  planPriceUsd,
+}: {
+  hasSubscription: boolean;
+  planPriceUsd: number;
+}) {
   const [loading, setLoading] = useState(false);
 
   const handleCheckout = async () => {
@@ -61,7 +67,7 @@ export function BillingActions({ hasSubscription }: { hasSubscription: boolean }
       disabled={loading}
       className="mt-4 w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
     >
-      {loading ? "Yönlendiriliyor..." : "Plan Seç ($149/ay)"}
+      {loading ? "Yönlendiriliyor..." : `Plan Seç ($${planPriceUsd}/ay)`}
     </button>
   );
 }

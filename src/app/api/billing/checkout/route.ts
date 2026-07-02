@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateStripeCustomer, createCheckoutSession } from "@/lib/stripe";
 import { logAuditEvent } from "@/lib/audit-log";
+import { DEFAULT_PLAN_ID, getPlanPriceId, PLANS } from "@/lib/billing/plans";
 
 export async function POST() {
   try {
@@ -22,9 +23,12 @@ export async function POST() {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const priceId = process.env.STRIPE_PRICE_ID;
+    const priceId = getPlanPriceId(DEFAULT_PLAN_ID, process.env);
     if (!priceId) {
-      return NextResponse.json({ error: "Stripe Price ID not configured" }, { status: 500 });
+      return NextResponse.json(
+        { error: `${PLANS[DEFAULT_PLAN_ID].stripePriceEnvVar} not configured` },
+        { status: 500 }
+      );
     }
 
     const customerId = await getOrCreateStripeCustomer(business.id, user.email!);

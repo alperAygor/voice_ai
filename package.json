@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "tsc --module commonjs --target ES2022 --moduleResolution node --esModuleInterop --skipLibCheck --strict --noEmit false --outDir .test-dist tests/*.test.ts src/lib/billing/usage-calculations.ts src/lib/billing/stripe-status.ts src/lib/billing/invoice-format.ts src/lib/agent-tools/scheduling.ts src/lib/google-calendar-oauth-state-calculations.ts src/lib/twilio/number-management.ts src/lib/dashboard/metrics.ts src/lib/dashboard/types.ts src/lib/customers/context-format.ts src/lib/appointments/action-token-format.ts src/lib/appointments/notification-message.ts src/lib/onboarding/checklist.ts src/lib/admin/access.ts src/lib/admin/support-summary.ts src/lib/webhooks/event-ids.ts && node --test .test-dist/tests/*.test.js"
