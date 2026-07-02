@@ -6,9 +6,13 @@ import type { TwilioNumber } from "@/lib/twilio/client";
 export function PhoneNumberPicker({
   currentPhoneNumber,
   currentNumberSid,
+  businessId,
 }: {
   currentPhoneNumber?: string | null;
   currentNumberSid?: string | null;
+  // Admin panelinde başka bir tenant için sağlama yapılırken verilir.
+  // Kullanıcı kendi işletmesinde kullanınca boş kalır (API kendi işletmesini bulur).
+  businessId?: string;
 }) {
   const [isSearching, setIsSearching] = useState(false);
   const [countryCode, setCountryCode] = useState("US");
@@ -44,7 +48,7 @@ export function PhoneNumberPicker({
       const res = await fetch("/api/twilio/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber, replaceExisting: Boolean(currentNumberSid) })
+        body: JSON.stringify({ phoneNumber, replaceExisting: Boolean(currentNumberSid), businessId })
       });
       const data = await res.json();
       
@@ -69,7 +73,11 @@ export function PhoneNumberPicker({
 
     setReleasing(true);
     try {
-      const res = await fetch("/api/twilio/release", { method: "POST" });
+      const res = await fetch("/api/twilio/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId }),
+      });
       const data = await res.json();
 
       if (res.ok) {

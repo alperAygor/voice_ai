@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sesli AI Resepsiyonist",
-  description: "Ev hizmetleri işletmeleri için sesli AI resepsiyonist platformu",
+  title: "Voxa — AI Voice Receptionist",
+  description:
+    "AI voice receptionist for home services — answers calls 24/7, qualifies callers and books appointments.",
 };
 
 export default function RootLayout({

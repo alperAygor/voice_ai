@@ -8,6 +8,7 @@ import {
   deletePhoneNumberFromVapi,
 } from "@/lib/twilio/vapi-integration";
 import { getTwilioNumberChangePlan } from "@/lib/twilio/number-management";
+import { resolveNumberOpBusinessId } from "@/lib/twilio/target-business";
 import { logAuditEvent } from "@/lib/audit-log";
 
 function getErrorMessage(error: unknown): string {
@@ -23,23 +24,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = (await req.json()) as { phoneNumber?: string; replaceExisting?: boolean };
+    const body = (await req.json()) as {
+      phoneNumber?: string;
+      replaceExisting?: boolean;
+      businessId?: string;
+    };
     const { phoneNumber } = body;
     if (!phoneNumber) {
       return NextResponse.json({ error: "phoneNumber is required" }, { status: 400 });
     }
 
-    const { data: business } = await supabase
+    // Admin (ADMIN_EMAILS) başka tenant adına sağlayabilir; kullanıcı yalnızca kendi
+    // işletmesi için. Operatör işlemi olduğundan okumalar admin client ile yapılır.
+    const adminSupabase = createAdminClient();
+    const businessId = await resolveNumberOpBusinessId(adminSupabase, user, body.businessId);
+
+    if (!businessId) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 });
+    }
+
+    const { data: business } = await adminSupabase
       .from("businesses")
       .select("id, twilio_phone_number_sid")
-      .eq("owner_user_id", user.id)
+      .eq("id", businessId)
       .single();
 
     if (!business) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const { data: agentConfig } = await supabase
+    const { data: agentConfig } = await adminSupabase
       .from("agent_config")
       .select("id, vapi_assistant_id, vapi_phone_number_id")
       .eq("business_id", business.id)
@@ -68,8 +82,6 @@ export async function POST(req: Request) {
       if (agentConfig?.vapi_assistant_id) {
         await assignPhoneNumberToAssistant(vapiPhoneId, agentConfig.vapi_assistant_id);
       }
-
-      const adminSupabase = createAdminClient();
 
       await adminSupabase
         .from("businesses")

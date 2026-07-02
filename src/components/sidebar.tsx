@@ -42,10 +42,10 @@ export function Sidebar({ businessName, isAdmin }: { businessName: string; isAdm
         })}
         {isAdmin && (
           <Link
-            href="/support"
-            className="block rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+            href="/admin"
+            className="mt-2 block rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
           >
-            Support
+            Admin Panel
           </Link>
         )}
       </nav>

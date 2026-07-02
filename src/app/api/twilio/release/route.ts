@@ -3,13 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { releaseNumber } from "@/lib/twilio/client";
 import { deletePhoneNumberFromVapi } from "@/lib/twilio/vapi-integration";
+import { resolveNumberOpBusinessId } from "@/lib/twilio/target-business";
 import { logAuditEvent } from "@/lib/audit-log";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Failed to release number";
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const supabase = await createClient();
     const {
@@ -20,10 +21,20 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: business } = await supabase
+    const body = (await req.json().catch(() => ({}))) as { businessId?: string };
+
+    // Admin başka tenant adına bırakabilir; kullanıcı yalnızca kendi işletmesi.
+    const adminSupabase = createAdminClient();
+    const businessId = await resolveNumberOpBusinessId(adminSupabase, user, body.businessId);
+
+    if (!businessId) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 });
+    }
+
+    const { data: business } = await adminSupabase
       .from("businesses")
       .select("id, phone_number, twilio_phone_number_sid")
-      .eq("owner_user_id", user.id)
+      .eq("id", businessId)
       .single();
 
     if (!business) {
@@ -34,7 +45,7 @@ export async function POST() {
       return NextResponse.json({ error: "No Twilio number to release" }, { status: 400 });
     }
 
-    const { data: agentConfig } = await supabase
+    const { data: agentConfig } = await adminSupabase
       .from("agent_config")
       .select("id, vapi_phone_number_id")
       .eq("business_id", business.id)
@@ -61,7 +72,6 @@ export async function POST() {
       }
     }
 
-    const adminSupabase = createAdminClient();
     await adminSupabase
       .from("businesses")
       .update({
