@@ -56,7 +56,11 @@ function assistantPayload(config: VapiAssistantConfig) {
     },
     voice: {
       provider: "deepgram",
-      voiceId: "aura-athena-en",
+      // Deepgram ses kısa isimle verilir ("aura-athena-en" değil). Not: Deepgram
+      // Aura yalnızca İngilizce + İspanyolca ses sunar; TR/FR/DE/IT için de bu
+      // İngilizce ses metni okur (anlaşılır ama aksanlı). Gerçek çok dilli ses
+      // için TTS'i 11labs/Cartesia'ya çevirmek gerekir.
+      voiceId: config.language === "es" ? "celeste" : "athena",
     },
     server: {
       url: config.serverUrl,
