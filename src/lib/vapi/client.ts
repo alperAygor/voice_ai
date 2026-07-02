@@ -51,16 +51,19 @@ function assistantPayload(config: VapiAssistantConfig) {
     },
     transcriber: {
       provider: "deepgram",
-      model: "nova-3",
+      // nova-2 Türkçe dahil geniş dil desteği sunar; nova-3 İngilizce ağırlıklı
+      // olduğundan Türkçe algılamada zayıf kalıyordu.
+      model: "nova-2",
       language: VAPI_LOCALE[config.language],
     },
     voice: {
-      provider: "deepgram",
-      // Deepgram ses kısa isimle verilir ("aura-athena-en" değil). Not: Deepgram
-      // Aura yalnızca İngilizce + İspanyolca ses sunar; TR/FR/DE/IT için de bu
-      // İngilizce ses metni okur (anlaşılır ama aksanlı). Gerçek çok dilli ses
-      // için TTS'i 11labs/Cartesia'ya çevirmek gerekir.
-      voiceId: config.language === "es" ? "celeste" : "athena",
+      // ElevenLabs — Türkçe dahil doğal çok dilli ses. Vapi Integrations'ta
+      // ElevenLabs (ücretli plan) anahtarı ekli olmalı. Turbo v2.5, dil
+      // zorlamasını (config.language ISO 639-1) destekleyen tek model.
+      provider: "11labs",
+      voiceId: process.env.VAPI_ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvDq8ikWAM",
+      model: "eleven_turbo_v2_5",
+      language: config.language,
     },
     server: {
       url: config.serverUrl,
