@@ -14,8 +14,17 @@ import { getVapiEndOfCallEventId } from "@/lib/webhooks/event-ids";
 
 export async function POST(req: Request) {
   const secret = process.env.VAPI_WEBHOOK_SECRET;
-  if (secret && req.headers.get("x-vapi-secret") !== secret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (secret) {
+    if (req.headers.get("x-vapi-secret") !== secret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  } else {
+    // Secret ayarlı değilse webhook doğrulanmıyor — sahte veri POST edilebilir.
+    // Production'da VAPI_WEBHOOK_SECRET mutlaka ayarlanmalı (assistant da bunu
+    // gönderecek şekilde yeniden provision edilmeli).
+    console.warn(
+      "GÜVENLİK: VAPI_WEBHOOK_SECRET ayarlı değil — Vapi webhook'u doğrulanmadan işleniyor."
+    );
   }
 
   const clone = req.clone();

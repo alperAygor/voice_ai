@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrCreateCallRow } from "./calls";
 import { sendAndLogMessage, sendAndLogSms } from "@/lib/notifications/sms";
+import { notifyOwnerOfAppointment } from "@/lib/notifications/owner";
 import { isCalendarConnected, createCalendarEvent } from "@/lib/google-calendar";
 import { assertAppointmentSlotAvailable } from "@/lib/appointments/conflicts";
 import {
@@ -117,6 +118,20 @@ export async function bookAppointment(
       body: messageBody,
       channel: "whatsapp",
     });
+  }
+
+  // İşletme sahibine yeni randevu bildirimi (e-posta). Bildirim başarısız olsa
+  // bile randevu akışını bozmaz.
+  try {
+    await notifyOwnerOfAppointment(businessId, {
+      customerName: input.customer_name,
+      customerPhone: input.customer_phone,
+      whenText: when,
+      serviceType: input.service_type,
+      address: input.address,
+    });
+  } catch (err) {
+    console.error("İşletme sahibine randevu bildirimi gönderilemedi:", err);
   }
 
   return { appointmentId: appointment.id };

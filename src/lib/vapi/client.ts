@@ -67,6 +67,12 @@ function assistantPayload(config: VapiAssistantConfig) {
     },
     server: {
       url: config.serverUrl,
+      // VAPI_WEBHOOK_SECRET ayarlıysa Vapi her webhook'ta bunu x-vapi-secret
+      // header'ıyla gönderir; webhook route bunu zorunlu kılar. Ayarlıysa
+      // webhook kimliği doğrulanır — aksi halde uç nokta korumasızdır.
+      ...(process.env.VAPI_WEBHOOK_SECRET
+        ? { secret: process.env.VAPI_WEBHOOK_SECRET }
+        : {}),
     },
     functions: config.functions,
   };

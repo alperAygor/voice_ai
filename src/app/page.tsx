@@ -190,7 +190,12 @@ export default async function Home() {
             <span className="font-medium text-gray-900">Voxa</span>
             <span className="hidden sm:inline">— {t.footer.tagline}</span>
           </div>
-          <span>© {new Date().getFullYear()} Voxa. {t.footer.rights}</span>
+          <div className="flex items-center gap-4">
+            <Link href="/gizlilik" className="hover:text-gray-900">
+              Gizlilik &amp; KVKK
+            </Link>
+            <span>© {new Date().getFullYear()} Voxa. {t.footer.rights}</span>
+          </div>
         </div>
       </footer>
     </div>

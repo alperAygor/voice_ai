@@ -135,7 +135,19 @@ Regole:
 9. Alla fine della chiamata fai un breve riepilogo e ringrazia chi ha chiamato.`.trim(),
 };
 
+// KVKK/GDPR: görüşmeler kaydedilip transkript/kişisel veri saklandığı için
+// arayana kayıt bildirimi yapılmalı. AI, görüşmenin başında bunu belirtir.
+const RECORDING_DISCLOSURE: Record<SupportedLanguage, string> = {
+  tr: 'Görüşmenin hemen başında, yardım teklifinden hemen önce kısaca belirt: "Bu görüşme hizmet kalitesi için kaydedilmektedir." Sonra normal şekilde devam et.',
+  en: 'At the very start of the call, just before offering help, briefly state: "This call is being recorded for quality purposes." Then continue normally.',
+  es: 'Al inicio de la llamada, justo antes de ofrecer ayuda, di brevemente: "Esta llamada se graba con fines de calidad." Luego continúa con normalidad.',
+  fr: "Au tout début de l'appel, juste avant de proposer votre aide, indiquez brièvement : « Cet appel est enregistré à des fins de qualité. » Puis continuez normalement.",
+  de: 'Sagen Sie ganz am Anfang des Gesprächs, kurz bevor Sie Ihre Hilfe anbieten: „Dieses Gespräch wird zu Qualitätszwecken aufgezeichnet." Fahren Sie dann normal fort.',
+  it: 'All\'inizio della chiamata, subito prima di offrire aiuto, indica brevemente: "Questa chiamata è registrata per finalità di qualità." Poi continua normalmente.',
+};
+
 export function buildSystemPrompt(input: SystemPromptInput): string {
   const { language, ...rest } = input;
-  return BUILDERS[language](rest);
+  const base = BUILDERS[language](rest);
+  return `${base}\n\n${RECORDING_DISCLOSURE[language]}`;
 }

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveBusinessIdByAssistant, getOrCreateCallRow } from "@/lib/agent-tools/calls";
 import { triggerMissedCallCallback } from "@/lib/agent-tools/outbound";
 import { sendAndLogSms } from "@/lib/notifications/sms";
+import { notifyOwnerOfEmergency } from "@/lib/notifications/owner";
 import { analyzeCallTranscript, type CallAnalysis } from "@/lib/anthropic/call-analysis";
 import { recordCallUsage } from "@/lib/billing/usage";
 import type { Json } from "@/lib/supabase/database.types";
@@ -113,6 +114,22 @@ export async function handleEndOfCallReport(message: Record<string, unknown>) {
     typeof message.cost === "number" ? message.cost : 0,
     endedAt
   );
+
+  // Görüşme acil olarak işaretlendiyse işletme sahibine anlık uyarı (e-posta).
+  if (outcome === "emergency_flagged") {
+    try {
+      await notifyOwnerOfEmergency(businessId, {
+        callerNumber,
+        summary,
+        whenText: endedAt.toLocaleString("tr-TR", {
+          dateStyle: "long",
+          timeStyle: "short",
+        }),
+      });
+    } catch (err) {
+      console.error("İşletme sahibine acil durum bildirimi gönderilemedi:", err);
+    }
+  }
 
   if (!callerNumber) return;
 
