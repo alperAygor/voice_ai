@@ -1,26 +1,24 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveBusinessIdByAssistant } from "@/lib/agent-tools/calls";
+import { parseVapiToolCallMessage } from "@/lib/vapi/tool-call-parser";
 
-// Vapi'nin fonksiyon çağrısı webhook zarfı. Vapi dashboard'undaki gerçek
-// payload loglarıyla karşılaştırıp gerekirse alan adlarını güncelle.
 export async function parseFunctionCall(req: Request) {
   const body = await req.json();
-  const message = body.message ?? body;
-  const call = message.call ?? {};
+  const parsed = parseVapiToolCallMessage(body);
   const supabase = createAdminClient();
 
-  const businessId = call.assistantId
-    ? await resolveBusinessIdByAssistant(supabase, call.assistantId)
+  const businessId = parsed.assistantId
+    ? await resolveBusinessIdByAssistant(supabase, parsed.assistantId)
     : null;
 
   return {
     supabase,
     businessId,
-    vapiCallId: call.id as string | undefined,
-    callerNumber: (call.customer?.number as string | undefined) ?? null,
-    functionName: message.functionCall?.name as string | undefined,
-    parameters: (message.functionCall?.parameters ?? {}) as Record<string, unknown>,
-    rawMessage: message,
+    vapiCallId: parsed.callId ?? undefined,
+    callerNumber: parsed.callerNumber,
+    functionName: parsed.functionName ?? undefined,
+    parameters: parsed.parameters,
+    rawMessage: body,
   };
 }

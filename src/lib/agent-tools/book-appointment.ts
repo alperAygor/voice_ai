@@ -10,6 +10,7 @@ import {
   createAppointmentActionTokens,
 } from "@/lib/appointments/action-tokens";
 import { buildAppointmentConfirmationMessage } from "@/lib/appointments/notification-message";
+import { getNotificationPreferencesForBusiness } from "@/lib/notifications/preferences-store";
 
 export type BookAppointmentInput = {
   customer_name: string;
@@ -82,46 +83,54 @@ export async function bookAppointment(
     timeStyle: "short",
   });
 
-  const tokens = await createAppointmentActionTokens({
-    appointmentId: appointment.id,
-    businessId,
-  });
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const messageBody = buildAppointmentConfirmationMessage({
-    whenText: when,
-    confirmUrl: buildAppointmentActionUrl({
-      appUrl,
-      token: tokens.confirm,
-      action: "confirm",
-    }),
-    cancelUrl: buildAppointmentActionUrl({
-      appUrl,
-      token: tokens.cancel,
-      action: "cancel",
-    }),
-  });
-
-  await sendAndLogSms({
-    businessId,
-    callId,
-    appointmentId: appointment.id,
-    toPhone: input.customer_phone,
-    body: messageBody,
-  });
-
-  if (process.env.TWILIO_WHATSAPP_FROM) {
-    await sendAndLogMessage({
-      businessId,
-      callId,
+  try {
+    const notificationPreferences = await getNotificationPreferencesForBusiness(businessId);
+    const tokens = await createAppointmentActionTokens({
       appointmentId: appointment.id,
-      toPhone: input.customer_phone,
-      body: messageBody,
-      channel: "whatsapp",
+      businessId,
     });
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const messageBody = buildAppointmentConfirmationMessage({
+      whenText: when,
+      confirmUrl: buildAppointmentActionUrl({
+        appUrl,
+        token: tokens.confirm,
+        action: "confirm",
+      }),
+      cancelUrl: buildAppointmentActionUrl({
+        appUrl,
+        token: tokens.cancel,
+        action: "cancel",
+      }),
+    });
+
+    if (notificationPreferences.smsAppointmentConfirmations) {
+      await sendAndLogSms({
+        businessId,
+        callId,
+        appointmentId: appointment.id,
+        toPhone: input.customer_phone,
+        body: messageBody,
+      });
+    }
+
+    if (
+      notificationPreferences.whatsappAppointmentConfirmations &&
+      process.env.TWILIO_WHATSAPP_FROM
+    ) {
+      await sendAndLogMessage({
+        businessId,
+        callId,
+        appointmentId: appointment.id,
+        toPhone: input.customer_phone,
+        body: messageBody,
+        channel: "whatsapp",
+      });
+    }
+  } catch (err) {
+    console.error("Müşteri randevu bildirimi gönderilemedi:", err);
   }
 
-  // İşletme sahibine yeni randevu bildirimi (e-posta). Bildirim başarısız olsa
-  // bile randevu akışını bozmaz.
   try {
     await notifyOwnerOfAppointment(businessId, {
       customerName: input.customer_name,

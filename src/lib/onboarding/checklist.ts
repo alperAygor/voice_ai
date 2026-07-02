@@ -2,9 +2,6 @@ export type SetupChecklistInput = {
   businessName?: string | null;
   serviceCount: number;
   hasBusinessHours: boolean;
-  vapiAssistantId?: string | null;
-  phoneNumber?: string | null;
-  vapiPhoneNumberId?: string | null;
   googleCalendarConnected: boolean;
   subscriptionStatus?: string | null;
 };
@@ -37,18 +34,6 @@ export function buildSetupChecklist(input: SetupChecklistInput): SetupChecklist 
       label: "Hizmetler",
       completed: input.serviceCount > 0,
       href: "/onboarding",
-    },
-    {
-      key: "vapi_assistant",
-      label: "Vapi agent",
-      completed: Boolean(input.vapiAssistantId),
-      href: "/dashboard/agent-settings",
-    },
-    {
-      key: "phone_number",
-      label: "Telefon numarası",
-      completed: Boolean(input.phoneNumber && input.vapiPhoneNumberId),
-      href: "/dashboard/agent-settings",
     },
     {
       key: "calendar",

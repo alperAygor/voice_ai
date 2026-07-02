@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { provisionAssistant } from "@/lib/vapi/provision";
-import type { SupportedLanguage } from "@/lib/vapi/languages";
+import { LANGUAGE_LABELS, type SupportedLanguage } from "@/lib/vapi/languages";
 
 export type AgentSettingsState = { error: string | null; success: boolean };
 
@@ -30,10 +30,20 @@ export async function updateAgentSettings(
     return { error: "İşletme bulunamadı.", success: false };
   }
 
-  const language = String(formData.get("language") ?? "tr") as SupportedLanguage;
+  const requestedLanguage = String(formData.get("language") ?? "tr");
+  const language = requestedLanguage in LANGUAGE_LABELS
+    ? (requestedLanguage as SupportedLanguage)
+    : "tr";
   const greetingMessage = String(formData.get("greeting_message") ?? "");
   const emergencyDefinition = String(formData.get("emergency_definition") ?? "");
   const transferRule = String(formData.get("transfer_rule") ?? "");
+  const requestedResponseStyle = String(formData.get("response_style") ?? "concise");
+  const responseStyle = requestedResponseStyle === "balanced" ? "balanced" : "concise";
+  const customInstructions = String(formData.get("custom_instructions") ?? "");
+  const smsAppointmentConfirmations = formData.get("sms_appointment_confirmations") === "on";
+  const whatsappAppointmentConfirmations =
+    formData.get("whatsapp_appointment_confirmations") === "on";
+  const smsCallFollowups = formData.get("sms_call_followups") === "on";
 
   const { error: updateError } = await supabase
     .from("agent_config")
@@ -43,6 +53,11 @@ export async function updateAgentSettings(
       escalation_rules: {
         emergency_definition: emergencyDefinition,
         transfer_rule: transferRule,
+        response_style: responseStyle,
+        custom_instructions: customInstructions,
+        sms_appointment_confirmations: smsAppointmentConfirmations,
+        whatsapp_appointment_confirmations: whatsappAppointmentConfirmations,
+        sms_call_followups: smsCallFollowups,
       },
     })
     .eq("business_id", business.id);

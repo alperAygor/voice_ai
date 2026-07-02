@@ -48,6 +48,8 @@ export async function provisionAssistant(businessId: string) {
     (agentConfig.escalation_rules as {
       emergency_definition?: string;
       transfer_rule?: string;
+      response_style?: "concise" | "balanced";
+      custom_instructions?: string;
     } | null) ?? {};
 
   const servicesList = (services ?? []).map((s) => s.service_name).join(", ") || "-";
@@ -72,6 +74,8 @@ export async function provisionAssistant(businessId: string) {
     servicesList,
     emergencyKeywords,
     language,
+    responseStyle: escalationRules.response_style ?? "concise",
+    customInstructions: escalationRules.custom_instructions,
   });
 
   if (escalationRules.transfer_rule) {

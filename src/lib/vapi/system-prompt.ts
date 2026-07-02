@@ -8,6 +8,8 @@ export type SystemPromptInput = {
   servicesList: string;
   emergencyKeywords: string;
   language: SupportedLanguage;
+  responseStyle?: "concise" | "balanced";
+  customInstructions?: string;
 };
 
 type Builder = (input: Omit<SystemPromptInput, "language">) => string;
@@ -146,8 +148,88 @@ const RECORDING_DISCLOSURE: Record<SupportedLanguage, string> = {
   it: 'All\'inizio della chiamata, subito prima di offrire aiuto, indica brevemente: "Questa chiamata è registrata per finalità di qualità." Poi continua normalmente.',
 };
 
+const CONVERSATION_STYLE: Record<SupportedLanguage, string> = {
+  tr: [
+    "Konuşma stili:",
+    "- Çok kısa konuş: yanıtların çoğu 1-2 cümle olsun.",
+    "- Aynı anda yalnızca bir soru sor.",
+    "- Müşterinin söylediğini gereksiz yere tekrar etme.",
+    "- Randevu için gerekli bilgiler tamamlanınca hemen uygunluk kontrolü yap.",
+    "- Müşteri saati onaylayınca konuşmayı uzatmadan book_appointment çağır.",
+    "- Randevu oluştuktan sonra kısa onay ver ve görüşmeyi nazikçe bitir.",
+  ].join("\n"),
+  en: [
+    "Conversation style:",
+    "- Keep it very brief: most replies should be 1-2 sentences.",
+    "- Ask only one question at a time.",
+    "- Do not repeat what the caller said unless it prevents confusion.",
+    "- Once booking details are complete, check availability immediately.",
+    "- Once the caller confirms the time, call book_appointment without stretching the call.",
+    "- After booking, give a short confirmation and close politely.",
+  ].join("\n"),
+  es: [
+    "Estilo de conversación:",
+    "- Sé muy breve: la mayoría de respuestas deben tener 1-2 frases.",
+    "- Haz solo una pregunta a la vez.",
+    "- No repitas lo que dijo la persona salvo que evite confusión.",
+    "- Cuando tengas los datos de la cita, revisa disponibilidad de inmediato.",
+    "- Cuando confirme la hora, llama a book_appointment sin alargar la llamada.",
+    "- Después de agendar, confirma brevemente y cierra con cortesía.",
+  ].join("\n"),
+  fr: [
+    "Style de conversation :",
+    "- Sois très bref : la plupart des réponses doivent faire 1-2 phrases.",
+    "- Pose une seule question à la fois.",
+    "- Ne répète pas les propos de l'appelant sauf si cela évite une confusion.",
+    "- Dès que les informations sont complètes, vérifie les disponibilités.",
+    "- Après confirmation du créneau, appelle book_appointment sans prolonger l'appel.",
+    "- Après la prise de rendez-vous, confirme brièvement et termine poliment.",
+  ].join("\n"),
+  de: [
+    "Gesprächsstil:",
+    "- Sprich sehr kurz: die meisten Antworten sollen 1-2 Sätze haben.",
+    "- Stelle immer nur eine Frage.",
+    "- Wiederhole den Anrufer nicht unnötig.",
+    "- Sobald die Termindaten vollständig sind, prüfe sofort die Verfügbarkeit.",
+    "- Nach Bestätigung der Uhrzeit rufe book_appointment auf, ohne das Gespräch zu verlängern.",
+    "- Nach der Buchung kurz bestätigen und höflich beenden.",
+  ].join("\n"),
+  it: [
+    "Stile di conversazione:",
+    "- Sii molto breve: la maggior parte delle risposte deve avere 1-2 frasi.",
+    "- Fai una sola domanda alla volta.",
+    "- Non ripetere inutilmente ciò che dice il cliente.",
+    "- Quando i dati sono completi, controlla subito la disponibilità.",
+    "- Quando il cliente conferma l'orario, chiama book_appointment senza allungare la chiamata.",
+    "- Dopo la prenotazione, conferma brevemente e chiudi con cortesia.",
+  ].join("\n"),
+};
+
+const BALANCED_STYLE_NOTE: Record<SupportedLanguage, string> = {
+  tr: "Denge modu: kısa kal, ama karmaşık durumlarda bir cümlelik açıklama ekleyebilirsin.",
+  en: "Balanced mode: stay brief, but add a one-sentence explanation for complex cases.",
+  es: "Modo equilibrado: sé breve, pero añade una explicación de una frase si el caso es complejo.",
+  fr: "Mode équilibré : reste bref, mais ajoute une phrase d'explication pour les cas complexes.",
+  de: "Ausgewogener Modus: bleibe kurz, erkläre komplexe Fälle aber mit einem Satz.",
+  it: "Modalità bilanciata: resta breve, ma aggiungi una frase nei casi complessi.",
+};
+
+const CUSTOM_INSTRUCTIONS_LABEL: Record<SupportedLanguage, string> = {
+  tr: "İşletmeye özel ek talimat",
+  en: "Business-specific additional instruction",
+  es: "Instrucción adicional específica del negocio",
+  fr: "Instruction supplémentaire propre à l'entreprise",
+  de: "Unternehmensspezifische Zusatzanweisung",
+  it: "Istruzione aggiuntiva specifica dell'attività",
+};
+
 export function buildSystemPrompt(input: SystemPromptInput): string {
-  const { language, ...rest } = input;
+  const { language, responseStyle = "concise", customInstructions, ...rest } = input;
   const base = BUILDERS[language](rest);
-  return `${base}\n\n${RECORDING_DISCLOSURE[language]}`;
+  const styleNote = responseStyle === "balanced" ? `\n${BALANCED_STYLE_NOTE[language]}` : "";
+  const custom = customInstructions?.trim()
+    ? `\n\n${CUSTOM_INSTRUCTIONS_LABEL[language]}: ${customInstructions.trim()}`
+    : "";
+
+  return `${base}\n\n${CONVERSATION_STYLE[language]}${styleNote}\n\n${RECORDING_DISCLOSURE[language]}${custom}`;
 }

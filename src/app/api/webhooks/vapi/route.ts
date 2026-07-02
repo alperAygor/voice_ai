@@ -32,7 +32,9 @@ export async function POST(req: Request) {
   const message = body.message ?? body;
 
   switch (message.type) {
-    case "function-call": {
+    case "function-call":
+    case "tool-call":
+    case "tool-calls": {
       const { businessId, vapiCallId, callerNumber, functionName, parameters } =
         await parseFunctionCall(clone);
 

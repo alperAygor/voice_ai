@@ -4,6 +4,7 @@ import { resolveBusinessIdByAssistant, getOrCreateCallRow } from "@/lib/agent-to
 import { triggerMissedCallCallback } from "@/lib/agent-tools/outbound";
 import { sendAndLogSms } from "@/lib/notifications/sms";
 import { notifyOwnerOfEmergency } from "@/lib/notifications/owner";
+import { getNotificationPreferencesForBusiness } from "@/lib/notifications/preferences-store";
 import { analyzeCallTranscript, type CallAnalysis } from "@/lib/anthropic/call-analysis";
 import { recordCallUsage } from "@/lib/billing/usage";
 import type { Json } from "@/lib/supabase/database.types";
@@ -143,6 +144,9 @@ export async function handleEndOfCallReport(message: Record<string, unknown>) {
   }
 
   if (outcome !== "appointment_booked" && summary) {
+    const notificationPreferences = await getNotificationPreferencesForBusiness(businessId);
+    if (!notificationPreferences.smsCallFollowups) return;
+
     await sendAndLogSms({
       businessId,
       callId,

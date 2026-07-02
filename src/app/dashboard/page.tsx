@@ -29,12 +29,6 @@ export default async function DashboardOverviewPage() {
     .select("id", { count: "exact", head: true })
     .eq("business_id", business.id);
 
-  const { data: agentConfig } = await supabase
-    .from("agent_config")
-    .select("vapi_assistant_id, vapi_phone_number_id")
-    .eq("business_id", business.id)
-    .maybeSingle();
-
   const checklist = buildSetupChecklist({
     businessName: business.name,
     serviceCount: serviceCount ?? 0,
@@ -43,9 +37,6 @@ export default async function DashboardOverviewPage() {
       typeof business.business_hours === "object" &&
       Object.keys(business.business_hours).length > 0
     ),
-    vapiAssistantId: agentConfig?.vapi_assistant_id,
-    phoneNumber: business.phone_number,
-    vapiPhoneNumberId: agentConfig?.vapi_phone_number_id,
     googleCalendarConnected: business.google_calendar_connected,
     subscriptionStatus: business.subscription_status,
   });

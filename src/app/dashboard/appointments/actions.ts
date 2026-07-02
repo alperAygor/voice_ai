@@ -12,6 +12,7 @@ import {
 } from "@/lib/appointments/action-tokens";
 import { buildAppointmentConfirmationMessage } from "@/lib/appointments/notification-message";
 import { sendAndLogMessage, sendAndLogSms } from "@/lib/notifications/sms";
+import { getNotificationPreferencesForBusiness } from "@/lib/notifications/preferences-store";
 
 export async function updateAppointmentStatus(
   appointmentId: string, 
@@ -122,44 +123,54 @@ export async function createManualAppointment(
     if (error || !appointment) throw new Error(error?.message ?? "Randevu oluşturulamadı.");
 
     if (customerPhone) {
-      const tokens = await createAppointmentActionTokens({
-        appointmentId: appointment.id,
-        businessId,
-      });
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-      const when = new Date(scheduledAt).toLocaleString("tr-TR", {
-        dateStyle: "long",
-        timeStyle: "short",
-      });
-      const body = buildAppointmentConfirmationMessage({
-        whenText: when,
-        confirmUrl: buildAppointmentActionUrl({
-          appUrl,
-          token: tokens.confirm,
-          action: "confirm",
-        }),
-        cancelUrl: buildAppointmentActionUrl({
-          appUrl,
-          token: tokens.cancel,
-          action: "cancel",
-        }),
-      });
-
-      await sendAndLogSms({
-        businessId,
-        appointmentId: appointment.id,
-        toPhone: customerPhone,
-        body,
-      });
-
-      if (process.env.TWILIO_WHATSAPP_FROM) {
-        await sendAndLogMessage({
-          businessId,
+      try {
+        const notificationPreferences = await getNotificationPreferencesForBusiness(businessId);
+        const tokens = await createAppointmentActionTokens({
           appointmentId: appointment.id,
-          toPhone: customerPhone,
-          body,
-          channel: "whatsapp",
+          businessId,
         });
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+        const when = new Date(scheduledAt).toLocaleString("tr-TR", {
+          dateStyle: "long",
+          timeStyle: "short",
+        });
+        const body = buildAppointmentConfirmationMessage({
+          whenText: when,
+          confirmUrl: buildAppointmentActionUrl({
+            appUrl,
+            token: tokens.confirm,
+            action: "confirm",
+          }),
+          cancelUrl: buildAppointmentActionUrl({
+            appUrl,
+            token: tokens.cancel,
+            action: "cancel",
+          }),
+        });
+
+        if (notificationPreferences.smsAppointmentConfirmations) {
+          await sendAndLogSms({
+            businessId,
+            appointmentId: appointment.id,
+            toPhone: customerPhone,
+            body,
+          });
+        }
+
+        if (
+          notificationPreferences.whatsappAppointmentConfirmations &&
+          process.env.TWILIO_WHATSAPP_FROM
+        ) {
+          await sendAndLogMessage({
+            businessId,
+            appointmentId: appointment.id,
+            toPhone: customerPhone,
+            body,
+            channel: "whatsapp",
+          });
+        }
+      } catch (notificationError) {
+        console.error("Manual appointment notification failed:", notificationError);
       }
     }
 

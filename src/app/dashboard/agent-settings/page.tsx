@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { AgentSettingsForm } from "./form";
 import Link from "next/link";
+import { normalizeNotificationPreferences } from "@/lib/notifications/preferences";
 
 export default async function AgentSettingsPage() {
   const supabase = await createClient();
@@ -16,9 +17,21 @@ export default async function AgentSettingsPage() {
 
   const { data: agentConfig } = await supabase
     .from("agent_config")
-    .select("language, greeting_message, escalation_rules")
+    .select("language, greeting_message, escalation_rules, system_prompt")
     .eq("business_id", business!.id)
     .single();
+
+  const escalationRules =
+    (agentConfig?.escalation_rules as {
+      emergency_definition?: string;
+      transfer_rule?: string;
+      response_style?: "concise" | "balanced";
+      custom_instructions?: string;
+      sms_appointment_confirmations?: boolean;
+      whatsapp_appointment_confirmations?: boolean;
+      sms_call_followups?: boolean;
+    } | null) ?? {};
+  const notificationPreferences = normalizeNotificationPreferences(escalationRules);
 
   return (
     <div className="max-w-3xl">
@@ -93,14 +106,19 @@ export default async function AgentSettingsPage() {
         <AgentSettingsForm
           initialLanguage={agentConfig?.language ?? "tr"}
           initialGreeting={agentConfig?.greeting_message ?? ""}
-          initialEmergencyDefinition={
-            (agentConfig?.escalation_rules as Record<string, string> | null)
-              ?.emergency_definition ?? ""
+          initialEmergencyDefinition={escalationRules.emergency_definition ?? ""}
+          initialTransferRule={escalationRules.transfer_rule ?? ""}
+          initialResponseStyle={escalationRules.response_style ?? "concise"}
+          initialCustomInstructions={escalationRules.custom_instructions ?? ""}
+          initialSmsAppointmentConfirmations={
+            notificationPreferences.smsAppointmentConfirmations
           }
-          initialTransferRule={
-            (agentConfig?.escalation_rules as Record<string, string> | null)
-              ?.transfer_rule ?? ""
+          initialWhatsappAppointmentConfirmations={
+            notificationPreferences.whatsappAppointmentConfirmations
           }
+          initialSmsCallFollowups={notificationPreferences.smsCallFollowups}
+          whatsappConfigured={Boolean(process.env.TWILIO_WHATSAPP_FROM)}
+          currentSystemPrompt={agentConfig?.system_prompt ?? ""}
         />
       </div>
     </div>

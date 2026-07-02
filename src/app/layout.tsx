@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageTransition } from "@/components/page-transition";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="tr" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </body>
     </html>
   );
