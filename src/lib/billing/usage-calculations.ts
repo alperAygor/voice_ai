@@ -28,20 +28,29 @@ export function getBillingMonth(date = new Date()): string {
   return `${year}-${month}-01`;
 }
 
+export type PlanUsageTerms = {
+  includedMinutes: number;
+  overageRate: number;
+};
+
 export function calculateUsageTotals(
   currentUsage: UsageSnapshot | null,
   callMinutes: number,
-  callCostUsd: number
+  callCostUsd: number,
+  plan: PlanUsageTerms = {
+    includedMinutes: PLAN_INCLUDED_MINUTES,
+    overageRate: OVERAGE_RATE_USD,
+  }
 ): UsageTotals {
   const totalMinutes = toNumber(currentUsage?.total_minutes) + callMinutes;
   const totalCostUsd = toNumber(currentUsage?.total_cost_usd) + callCostUsd;
-  const overageMinutes = Math.max(0, totalMinutes - PLAN_INCLUDED_MINUTES);
+  const overageMinutes = Math.max(0, totalMinutes - plan.includedMinutes);
 
   return {
     total_minutes: totalMinutes,
     total_cost_usd: Number(totalCostUsd.toFixed(4)),
-    plan_included_minutes: PLAN_INCLUDED_MINUTES,
+    plan_included_minutes: plan.includedMinutes,
     overage_minutes: overageMinutes,
-    overage_cost_usd: Number((overageMinutes * OVERAGE_RATE_USD).toFixed(2)),
+    overage_cost_usd: Number((overageMinutes * plan.overageRate).toFixed(2)),
   };
 }

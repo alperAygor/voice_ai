@@ -27,7 +27,7 @@ export default function LoginPage() {
               autoComplete="email"
               placeholder="ornek@isletme.com"
               required
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              className="form-input mt-1"
             />
           </div>
           <div>
@@ -49,7 +49,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               placeholder="••••••••"
               required
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              className="form-input mt-1"
             />
           </div>
 
@@ -62,7 +62,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-md bg-gray-900 px-3 py-2.5 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50"
+            className="primary-action w-full px-3 py-2.5"
           >
             {pending ? "Giriş yapılıyor..." : "Giriş yap"}
           </button>
@@ -73,7 +73,7 @@ export default function LoginPage() {
         <form action={signInWithGoogle}>
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            className="secondary-action flex w-full items-center justify-center gap-2 px-3 py-2.5"
           >
             <GoogleIcon />
             Google ile giriş yap

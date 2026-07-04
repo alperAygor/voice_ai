@@ -14,9 +14,13 @@ export function AuthLayout({
   children: ReactNode;
 }) {
   return (
-    <main className="flex flex-1 bg-white">
-      <section className="hidden w-[44%] border-r border-gray-200 bg-gray-950 px-10 py-10 text-white lg:flex lg:flex-col">
-        <div className="flex items-center justify-between gap-4">
+    <main className="flex flex-1 bg-slate-50">
+      <section className="relative hidden w-[44%] overflow-hidden bg-gradient-to-b from-indigo-950 via-gray-950 to-black px-10 py-10 text-white lg:flex lg:flex-col">
+        {/* Arka plan ışıltıları */}
+        <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl" />
+
+        <div className="relative flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-sm text-gray-950">
               V
@@ -28,29 +32,42 @@ export function AuthLayout({
           </div>
         </div>
 
-        <div className="mt-auto max-w-md">
-          <p className="text-sm font-medium text-indigo-200">{eyebrow}</p>
+        <div className="relative mt-auto max-w-md">
+          <p className="text-sm font-medium text-indigo-300">{eyebrow}</p>
           <h2 className="mt-4 text-4xl font-semibold leading-tight tracking-tight">
             Her arama cevaplanır, her randevu panelde görünür.
           </h2>
-          <p className="mt-5 text-sm leading-6 text-gray-300">
-            AI resepsiyonistiniz müşterileri karşılar, uygun saatleri kontrol eder
-            ve onaylanan randevuları Google Takvim&apos;e işler.
-          </p>
+
+          {/* Müşteri akışı: kaçan arama → AI → randevu */}
+          <div className="mt-8 space-y-3">
+            {[
+              { t: "Kaçırdığınız arama gelir", d: "Meşguldeyken, mesai dışında — hiçbiri boşa gitmez." },
+              { t: "AI karşılar ve randevu alır", d: "Müşteriyle konuşur, uygun saati bulur, kaydeder." },
+              { t: "Takvime yazılır, panelde görünür", d: "Google Takvim + özet ve analiz sizde." },
+            ].map((step, i) => (
+              <div key={step.t} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-indigo-500/90 text-xs font-semibold text-white">
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="text-sm font-medium">{step.t}</p>
+                  <p className="mt-0.5 text-xs text-gray-400">{step.d}</p>
+                </div>
+              </div>
+            ))}
+          </div>
 
           <div className="mt-8 grid grid-cols-3 gap-3 text-sm">
-            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-              <p className="font-semibold">7/24</p>
-              <p className="mt-1 text-xs text-gray-400">yanıtlama</p>
-            </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-              <p className="font-semibold">6 dil</p>
-              <p className="mt-1 text-xs text-gray-400">destek</p>
-            </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-              <p className="font-semibold">Takvim</p>
-              <p className="mt-1 text-xs text-gray-400">senkron</p>
-            </div>
+            {[
+              { v: "7/24", l: "yanıtlama" },
+              { v: "6 dil", l: "destek" },
+              { v: "Takvim", l: "senkron" },
+            ].map((s) => (
+              <div key={s.l} className="rounded-lg border border-white/10 bg-white/5 p-3 text-center shadow-lg shadow-black/10">
+                <p className="font-semibold">{s.v}</p>
+                <p className="mt-1 text-xs text-gray-400">{s.l}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -67,7 +84,7 @@ export function AuthLayout({
             <AutoLanguageSwitcher label="Dil" />
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="dashboard-card rounded-lg p-6 sm:p-8">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
                 {eyebrow}

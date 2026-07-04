@@ -46,7 +46,7 @@ function SignupContent() {
                   autoComplete="email"
                   placeholder="ornek@isletme.com"
                   required
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  className="form-input mt-1"
                 />
               </div>
               <div>
@@ -61,7 +61,7 @@ function SignupContent() {
                   placeholder="En az 8 karakter"
                   required
                   minLength={8}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  className="form-input mt-1"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   En az 8 karakter kullanın.
@@ -79,11 +79,11 @@ function SignupContent() {
                   placeholder="Şifrenizi tekrar girin"
                   required
                   minLength={8}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  className="form-input mt-1"
                 />
               </div>
 
-              <label className="flex gap-3 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm leading-6 text-gray-700">
+              <label className="flex gap-3 rounded-lg border border-gray-200 bg-slate-50 p-3 text-sm leading-6 text-gray-700 shadow-sm">
                 <input
                   type="checkbox"
                   name="legal_accept"
@@ -121,7 +121,7 @@ function SignupContent() {
               <button
                 type="submit"
                 disabled={pending || !legalAccepted}
-                className="w-full rounded-md bg-gray-900 px-3 py-2.5 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50"
+                className="primary-action w-full px-3 py-2.5"
               >
                 {pending ? "Kayıt oluşturuluyor..." : "Kayıt ol"}
               </button>
@@ -138,7 +138,7 @@ function SignupContent() {
               <button
                 type="submit"
                 disabled={!legalAccepted}
-                className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-100 disabled:opacity-50"
+                className="secondary-action flex w-full items-center justify-center gap-2 px-3 py-2.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
               >
                 <GoogleIcon />
                 Google ile kayıt ol

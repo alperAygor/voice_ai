@@ -2,12 +2,14 @@ export type NotificationPreferences = {
   smsAppointmentConfirmations: boolean;
   whatsappAppointmentConfirmations: boolean;
   smsCallFollowups: boolean;
+  whatsappCallFollowups: boolean;
 };
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   smsAppointmentConfirmations: true,
   whatsappAppointmentConfirmations: true,
   smsCallFollowups: true,
+  whatsappCallFollowups: true,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -33,6 +35,10 @@ export function normalizeNotificationPreferences(value: unknown): NotificationPr
     smsCallFollowups: readBoolean(
       rules.sms_call_followups,
       DEFAULT_NOTIFICATION_PREFERENCES.smsCallFollowups
+    ),
+    whatsappCallFollowups: readBoolean(
+      rules.whatsapp_call_followups,
+      DEFAULT_NOTIFICATION_PREFERENCES.whatsappCallFollowups
     ),
   };
 }

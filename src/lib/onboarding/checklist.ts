@@ -7,7 +7,7 @@ export type SetupChecklistInput = {
 };
 
 export type SetupChecklistItem = {
-  key: string;
+  key: "business_profile" | "services" | "calendar" | "billing";
   label: string;
   completed: boolean;
   href: string;

@@ -2,17 +2,16 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toAppSubscriptionStatus } from "@/lib/billing/stripe-status";
+import { getPlanIdByPriceId, isPlanId } from "@/lib/billing/plans";
 import { logAuditEvent } from "@/lib/audit-log";
 import {
   claimWebhookEvent,
   markWebhookEventFailed,
   markWebhookEventProcessed,
 } from "@/lib/webhooks/idempotency";
+import { getErrorMessage, logEvent } from "@/lib/monitoring/logger";
+import { captureError } from "@/lib/monitoring/events";
 import Stripe from "stripe";
-
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unknown error";
-}
 
 function getCustomerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null {
   return typeof customer === "string" ? customer : customer?.id ?? null;
@@ -35,9 +34,14 @@ export async function POST(req: Request) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch (error: unknown) {
-    console.error("Webhook signature verification failed:", getErrorMessage(error));
+    logEvent("warn", "stripe.webhook.signature_failed", { error: getErrorMessage(error) });
     return NextResponse.json({ error: "Webhook Error" }, { status: 400 });
   }
+
+  logEvent("info", "stripe.webhook.received", {
+    eventId: event.id,
+    eventType: event.type,
+  });
 
   const supabase = createAdminClient();
   const claim = await claimWebhookEvent({
@@ -47,6 +51,10 @@ export async function POST(req: Request) {
   });
 
   if (!claim.acquired) {
+    logEvent("info", "stripe.webhook.duplicate", {
+      eventId: event.id,
+      eventType: event.type,
+    });
     return NextResponse.json({ received: true, duplicate: true });
   }
 
@@ -56,6 +64,9 @@ export async function POST(req: Request) {
         const session = event.data.object as Stripe.Checkout.Session;
         const businessId = session.metadata?.businessId || session.client_reference_id;
         const customerId = getCustomerId(session.customer);
+        const sessionPlanId = isPlanId(session.metadata?.planId)
+          ? session.metadata.planId
+          : null;
 
         if (businessId) {
           await supabase
@@ -63,6 +74,7 @@ export async function POST(req: Request) {
             .update({
               subscription_status: "active",
               stripe_customer_id: customerId,
+              ...(sessionPlanId ? { plan_id: sessionPlanId } : {}),
             })
             .eq("id", businessId);
 
@@ -92,11 +104,21 @@ export async function POST(req: Request) {
           .eq("stripe_customer_id", customerId)
           .maybeSingle();
 
+        // Plan değişimini (portal üzerinden yükseltme/düşürme) yakala: önce
+        // abonelik metadata'sı, yoksa aktif price ID'sinden plana eşle.
+        const priceId = subscription.items?.data?.[0]?.price?.id ?? null;
+        const subPlanId =
+          (isPlanId(subscription.metadata?.planId) ? subscription.metadata.planId : null) ??
+          getPlanIdByPriceId(priceId, process.env);
+
         await supabase
           .from("businesses")
           .update({
             subscription_status: toAppSubscriptionStatus(subscription.status),
             stripe_subscription_id: subscription.id,
+            ...(event.type === "customer.subscription.updated" && subPlanId
+              ? { plan_id: subPlanId }
+              : {}),
           })
           .eq("stripe_customer_id", customerId);
 
@@ -176,12 +198,19 @@ export async function POST(req: Request) {
       await markWebhookEventProcessed(claim.recordId);
     }
   } catch (error) {
-    console.error("Error processing webhook:", error);
+    await captureError("stripe.webhook.failed", error, {
+      context: { eventId: event.id, eventType: event.type },
+    });
     if (claim.recordId) {
       await markWebhookEventFailed(claim.recordId);
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
+
+  logEvent("info", "stripe.webhook.processed", {
+    eventId: event.id,
+    eventType: event.type,
+  });
 
   return NextResponse.json({ received: true });
 }

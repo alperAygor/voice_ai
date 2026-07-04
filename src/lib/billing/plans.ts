@@ -62,3 +62,17 @@ export function getPlanPriceId(
 export function planHasWhatsappSms(planId: PlanId): boolean {
   return PLANS[planId].features.whatsappSms;
 }
+
+// Stripe price ID'sinden plana geri eşleme (portal üzerinden plan değişimini
+// webhook'ta yakalamak için). Eşleşme yoksa null.
+export function getPlanIdByPriceId(
+  priceId: string | null | undefined,
+  env: Record<string, string | undefined>
+): PlanId | null {
+  if (!priceId) return null;
+  for (const plan of Object.values(PLANS)) {
+    const configured = env[plan.stripePriceEnvVar];
+    if (configured && configured.trim() === priceId) return plan.id;
+  }
+  return null;
+}

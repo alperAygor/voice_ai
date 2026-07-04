@@ -7,7 +7,7 @@ export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div key={pathname} className="page-transition flex min-h-screen flex-col">
+    <div key={pathname} className="page-transition flex min-h-screen min-w-0 flex-col">
       {children}
     </div>
   );

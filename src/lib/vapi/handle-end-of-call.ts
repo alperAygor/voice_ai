@@ -2,36 +2,33 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveBusinessIdByAssistant, getOrCreateCallRow } from "@/lib/agent-tools/calls";
 import { triggerMissedCallCallback } from "@/lib/agent-tools/outbound";
-import { sendAndLogSms } from "@/lib/notifications/sms";
+import { dispatchCustomerMessage } from "@/lib/notifications/sms";
 import { notifyOwnerOfEmergency } from "@/lib/notifications/owner";
 import { getNotificationPreferencesForBusiness } from "@/lib/notifications/preferences-store";
 import { analyzeCallTranscript, type CallAnalysis } from "@/lib/anthropic/call-analysis";
-import { recordCallUsage } from "@/lib/billing/usage";
+import { parseEndOfCallReport } from "@/lib/vapi/end-of-call-parser";
+import { recordCallUsage, resolvePlanTerms } from "@/lib/billing/usage";
 import type { Json } from "@/lib/supabase/database.types";
 
 const VOICEMAIL_REASONS = ["voicemail"];
 const MISSED_REASONS = ["customer-did-not-answer", "no-answer", "silence-timed-out"];
 
 export async function handleEndOfCallReport(message: Record<string, unknown>) {
-  const call = (message.call ?? {}) as {
-    id?: string;
-    assistantId?: string;
-    customer?: { number?: string };
-  };
+  const parsed = parseEndOfCallReport(message);
 
-  if (!call.id || !call.assistantId) return;
+  if (!parsed.callId || !parsed.assistantId) return;
 
   const supabase = createAdminClient();
-  const businessId = await resolveBusinessIdByAssistant(supabase, call.assistantId);
+  const businessId = await resolveBusinessIdByAssistant(supabase, parsed.assistantId);
   if (!businessId) return;
 
-  const callerNumber = call.customer?.number ?? null;
-  const callId = await getOrCreateCallRow(supabase, businessId, call.id, callerNumber);
+  const callerNumber = parsed.callerNumber;
+  const callId = await getOrCreateCallRow(supabase, businessId, parsed.callId, callerNumber);
 
-  const transcript = String(message.transcript ?? "");
-  const endedReason = String(message.endedReason ?? "");
-  const startedAt = message.startedAt ? new Date(String(message.startedAt)) : null;
-  const endedAt = message.endedAt ? new Date(String(message.endedAt)) : new Date();
+  const transcript = parsed.transcript;
+  const endedReason = parsed.endedReason;
+  const startedAt = parsed.startedAt ? new Date(parsed.startedAt) : null;
+  const endedAt = parsed.endedAt ? new Date(parsed.endedAt) : new Date();
   const durationSeconds = startedAt
     ? Math.max(0, Math.round((endedAt.getTime() - startedAt.getTime()) / 1000))
     : null;
@@ -103,17 +100,24 @@ export async function handleEndOfCallReport(message: Record<string, unknown>) {
       outcome,
       ended_at: endedAt.toISOString(),
       duration_seconds: durationSeconds,
-      cost_usd: typeof message.cost === "number" ? message.cost : null,
-      recording_url: (message.recordingUrl as string | undefined) ?? null,
+      cost_usd: parsed.costUsd,
+      recording_url: parsed.recordingUrl,
     })
     .eq("id", callId);
+
+  const { data: planRow } = await supabase
+    .from("businesses")
+    .select("plan_id")
+    .eq("id", businessId)
+    .maybeSingle();
 
   await recordCallUsage(
     supabase,
     businessId,
     durationSeconds,
-    typeof message.cost === "number" ? message.cost : 0,
-    endedAt
+    parsed.costUsd ?? 0,
+    endedAt,
+    resolvePlanTerms(planRow?.plan_id ?? null)
   );
 
   // Görüşme acil olarak işaretlendiyse işletme sahibine anlık uyarı (e-posta).
@@ -145,13 +149,13 @@ export async function handleEndOfCallReport(message: Record<string, unknown>) {
 
   if (outcome !== "appointment_booked" && summary) {
     const notificationPreferences = await getNotificationPreferencesForBusiness(businessId);
-    if (!notificationPreferences.smsCallFollowups) return;
-
-    await sendAndLogSms({
+    await dispatchCustomerMessage({
       businessId,
       callId,
       toPhone: callerNumber,
       body: `Aradığınız için teşekkürler. Özet: ${summary}`,
+      smsEnabled: notificationPreferences.smsCallFollowups,
+      whatsappEnabled: notificationPreferences.whatsappCallFollowups,
     });
   }
 }

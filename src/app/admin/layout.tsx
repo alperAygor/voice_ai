@@ -33,6 +33,9 @@ export default async function AdminLayout({
               <Link href="/admin" className="hover:text-gray-900">
                 Genel Bakış
               </Link>
+              <Link href="/admin/monitoring" className="hover:text-gray-900">
+                Monitoring
+              </Link>
             </nav>
           </div>
           <Link

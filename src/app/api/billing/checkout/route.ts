@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateStripeCustomer, createCheckoutSession } from "@/lib/stripe";
 import { logAuditEvent } from "@/lib/audit-log";
-import { DEFAULT_PLAN_ID, getPlanPriceId, PLANS } from "@/lib/billing/plans";
+import { DEFAULT_PLAN_ID, getPlanPriceId, isPlanId, PLANS } from "@/lib/billing/plans";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -23,23 +23,29 @@ export async function POST() {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const priceId = getPlanPriceId(DEFAULT_PLAN_ID, process.env);
+    const requestedPlanId = await req
+      .json()
+      .then((body) => (body as { planId?: unknown })?.planId)
+      .catch(() => undefined);
+    const planId = isPlanId(requestedPlanId) ? requestedPlanId : DEFAULT_PLAN_ID;
+
+    const priceId = getPlanPriceId(planId, process.env);
     if (!priceId) {
       return NextResponse.json(
-        { error: `${PLANS[DEFAULT_PLAN_ID].stripePriceEnvVar} not configured` },
+        { error: `${PLANS[planId].stripePriceEnvVar} not configured` },
         { status: 500 }
       );
     }
 
     const customerId = await getOrCreateStripeCustomer(business.id, user.email!);
-    const session = await createCheckoutSession(customerId, priceId, business.id);
+    const session = await createCheckoutSession(customerId, priceId, business.id, planId);
 
     await logAuditEvent({
       businessId: business.id,
       actorUserId: user.id,
       eventType: "stripe.checkout_started",
       source: "stripe",
-      metadata: { sessionId: session.id },
+      metadata: { sessionId: session.id, planId },
     });
 
     return NextResponse.json({ url: session.url });

@@ -141,6 +141,7 @@ export type Database = {
           stripe_subscription_id: string | null;
           twilio_phone_number_sid: string | null;
           subscription_status: Database["public"]["Enums"]["subscription_status_type"];
+          plan_id: "starter" | "pro";
           created_at: string;
         };
         Insert: {
@@ -156,6 +157,7 @@ export type Database = {
           stripe_subscription_id?: string | null;
           twilio_phone_number_sid?: string | null;
           subscription_status?: Database["public"]["Enums"]["subscription_status_type"];
+          plan_id?: "starter" | "pro";
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["businesses"]["Insert"]>;
@@ -373,6 +375,30 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["webhook_events"]["Insert"]>;
+        Relationships: [];
+      };
+      system_events: {
+        Row: {
+          id: string;
+          level: "info" | "warn" | "error";
+          event: string;
+          business_id: string | null;
+          request_id: string | null;
+          message: string | null;
+          context: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          level: "info" | "warn" | "error";
+          event: string;
+          business_id?: string | null;
+          request_id?: string | null;
+          message?: string | null;
+          context?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["system_events"]["Insert"]>;
         Relationships: [];
       };
     };

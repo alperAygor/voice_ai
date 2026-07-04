@@ -3,6 +3,17 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { getLandingDictionary } from "@/lib/i18n/landing";
 import { getRequestLocale } from "@/lib/i18n/server";
 
+// Özellik kartları için ikonlar (sözlükteki 6 özelliğin sırasıyla eşleşir):
+// aramaları yanıtla · takvim · çok dil · analiz · hatırlatma · SMS
+const FEATURE_ICON_PATHS = [
+  "M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z",
+  "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5",
+  "M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418",
+  "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z",
+  "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0",
+  "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z",
+];
+
 export default async function Home() {
   const locale = await getRequestLocale();
   const t = getLandingDictionary(locale);
@@ -112,9 +123,17 @@ export default async function Home() {
             <p className="mt-3 text-gray-600">{t.features.subtitle}</p>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {t.features.items.map((f) => (
+            {t.features.items.map((f, i) => (
               <div key={f.title} className="interactive-lift rounded-lg border border-gray-100 bg-white p-6 soft-panel-shadow">
-                <div className="float-soft h-10 w-10 rounded-lg bg-indigo-50 shadow-inner shadow-indigo-100" />
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
+                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7}>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d={FEATURE_ICON_PATHS[i % FEATURE_ICON_PATHS.length]}
+                    />
+                  </svg>
+                </div>
                 <h3 className="mt-4 font-medium text-gray-900">{f.title}</h3>
                 <p className="mt-2 text-sm text-gray-600">{f.desc}</p>
               </div>
@@ -206,32 +225,32 @@ export default async function Home() {
           </div>
 
           <div>
-            <h3 className="font-medium text-gray-900">Ürün</h3>
+            <h3 className="font-medium text-gray-900">{t.footer.product}</h3>
             <div className="mt-3 grid gap-2">
-              <a href="#features" className="hover:text-gray-900">Özellikler</a>
-              <a href="#how" className="hover:text-gray-900">Nasıl çalışır</a>
-              <a href="#pricing" className="hover:text-gray-900">Fiyatlar</a>
-              <Link href="/signup" className="hover:text-gray-900">Ücretsiz başla</Link>
+              <a href="#features" className="hover:text-gray-900">{t.nav.features}</a>
+              <a href="#how" className="hover:text-gray-900">{t.nav.how}</a>
+              <a href="#pricing" className="hover:text-gray-900">{t.nav.pricing}</a>
+              <Link href="/signup" className="hover:text-gray-900">{t.nav.signup}</Link>
             </div>
           </div>
 
           <div>
-            <h3 className="font-medium text-gray-900">Hesap & destek</h3>
+            <h3 className="font-medium text-gray-900">{t.footer.accountSupport}</h3>
             <div className="mt-3 grid gap-2">
-              <Link href="/login" className="hover:text-gray-900">Giriş yap</Link>
-              <Link href="/dashboard" className="hover:text-gray-900">Panel</Link>
-              <Link href="/dashboard/guide" className="hover:text-gray-900">Kurulum rehberi</Link>
-              <Link href="/support" className="hover:text-gray-900">Destek</Link>
+              <Link href="/login" className="hover:text-gray-900">{t.nav.login}</Link>
+              <Link href="/dashboard" className="hover:text-gray-900">{t.footer.dashboard}</Link>
+              <Link href="/dashboard/guide" className="hover:text-gray-900">{t.footer.setupGuide}</Link>
+              <Link href="/support" className="hover:text-gray-900">{t.footer.support}</Link>
             </div>
           </div>
 
           <div>
-            <h3 className="font-medium text-gray-900">Hukuki</h3>
+            <h3 className="font-medium text-gray-900">{t.footer.legal}</h3>
             <div className="mt-3 grid gap-2">
-              <Link href="/gizlilik" className="hover:text-gray-900">Gizlilik Politikası</Link>
-              <Link href="/kvkk" className="hover:text-gray-900">KVKK Aydınlatma Metni</Link>
-              <Link href="/kullanim-sartlari" className="hover:text-gray-900">Kullanım Şartları</Link>
-              <Link href="/cerez-politikasi" className="hover:text-gray-900">Çerez Politikası</Link>
+              <Link href="/gizlilik" className="hover:text-gray-900">{t.footer.privacy}</Link>
+              <Link href="/kvkk" className="hover:text-gray-900">{t.footer.kvkk}</Link>
+              <Link href="/kullanim-sartlari" className="hover:text-gray-900">{t.footer.terms}</Link>
+              <Link href="/cerez-politikasi" className="hover:text-gray-900">{t.footer.cookies}</Link>
             </div>
           </div>
         </div>

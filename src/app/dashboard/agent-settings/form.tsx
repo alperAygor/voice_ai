@@ -3,31 +3,40 @@
 import { useActionState } from "react";
 import { updateAgentSettings } from "./actions";
 import { LANGUAGE_LABELS, type SupportedLanguage } from "@/lib/vapi/languages";
+import { VOICE_OPTIONS } from "@/lib/vapi/voices";
 
 const LANGUAGES = Object.keys(LANGUAGE_LABELS) as SupportedLanguage[];
 
 export function AgentSettingsForm({
   initialLanguage,
+  initialVoiceId,
   initialGreeting,
   initialEmergencyDefinition,
   initialTransferRule,
+  initialTransferPhoneNumber,
   initialResponseStyle,
+  initialAfterHoursBehavior,
   initialCustomInstructions,
   initialSmsAppointmentConfirmations,
   initialWhatsappAppointmentConfirmations,
   initialSmsCallFollowups,
+  initialWhatsappCallFollowups,
   whatsappConfigured,
   currentSystemPrompt,
 }: {
   initialLanguage: SupportedLanguage;
+  initialVoiceId: string;
   initialGreeting: string;
   initialEmergencyDefinition: string;
   initialTransferRule: string;
+  initialTransferPhoneNumber: string;
   initialResponseStyle: "concise" | "balanced";
+  initialAfterHoursBehavior: "book_anytime" | "restricted";
   initialCustomInstructions: string;
   initialSmsAppointmentConfirmations: boolean;
   initialWhatsappAppointmentConfirmations: boolean;
   initialSmsCallFollowups: boolean;
+  initialWhatsappCallFollowups: boolean;
   whatsappConfigured: boolean;
   currentSystemPrompt: string;
 }) {
@@ -52,8 +61,25 @@ export function AgentSettingsForm({
           ))}
         </select>
         <p className="mt-1 text-xs text-gray-500">
-          AI resepsiyonist bu dilde konuşur ve dinler (Deepgram Nova-3 STT +
-          Aura TTS).
+          AI resepsiyonist bu dilde konuşur ve dinler.
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">AI sesi</label>
+        <select
+          name="voice_id"
+          defaultValue={initialVoiceId}
+          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+        >
+          {VOICE_OPTIONS.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.label} — {v.description}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-gray-500">
+          AI resepsiyonistin sesi. Kaydedince yeni sesle güncellenir.
         </p>
       </div>
 
@@ -70,6 +96,23 @@ export function AgentSettingsForm({
         <p className="mt-1 text-xs text-gray-500">
           Kısa mod maliyeti düşürür: AI tek soru sorar, gereksiz tekrar yapmaz
           ve randevu onayında hızlıca kaydeder.
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Mesai dışı davranışı</label>
+        <select
+          name="after_hours_behavior"
+          defaultValue={initialAfterHoursBehavior}
+          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+        >
+          <option value="book_anytime">Her zaman randevu alabilir</option>
+          <option value="restricted">Mesai dışında randevu vermesin</option>
+        </select>
+        <p className="mt-1 text-xs text-gray-500">
+          &quot;Vermesin&quot; seçilirse: çalışma saatleri dışında AI randevu
+          oluşturmaz, arayana mesai saatlerini söyler; acil durumda transfer/kayıt
+          kurallarını uygular.
         </p>
       </div>
 
@@ -115,6 +158,22 @@ export function AgentSettingsForm({
           placeholder="Örn. arayan ısrarla insan isterse ya da acil durum varsa hemen aktar"
           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Transfer hedef numarası</label>
+        <input
+          type="tel"
+          name="transfer_phone_number"
+          defaultValue={initialTransferPhoneNumber}
+          placeholder="+90 5xx xxx xx xx"
+          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          Aktarım gerektiğinde aramanın yönlendirileceği yetkili numarası. Boş
+          bırakılırsa AI insana aktarmayı sadece kaydeder, gerçek yönlendirme
+          yapmaz. Uluslararası format önerilir (ör. +90…).
+        </p>
       </div>
 
       <section className="rounded-lg border border-gray-200 bg-white p-4">
@@ -180,6 +239,22 @@ export function AgentSettingsForm({
               <span className="font-medium text-gray-900">Randevu dışı görüşme sonrası özet SMS gönder</span>
               <span className="mt-0.5 block text-xs leading-5 text-gray-500">
                 Müşteri randevu almadan bilgi aldıysa kısa bir teşekkür/özet SMS&apos;i gönderilir.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex gap-3 rounded-md border border-gray-200 p-3 text-sm">
+            <input
+              type="checkbox"
+              name="whatsapp_call_followups"
+              defaultChecked={initialWhatsappCallFollowups}
+              disabled={!whatsappConfigured}
+              className="mt-1 h-4 w-4 rounded border-gray-300 disabled:opacity-40"
+            />
+            <span>
+              <span className="font-medium text-gray-900">Randevu dışı görüşme sonrası özet WhatsApp gönder</span>
+              <span className="mt-0.5 block text-xs leading-5 text-gray-500">
+                Twilio WhatsApp gönderen numarası bağlıysa özet mesajı SMS&apos;e ek olarak WhatsApp&apos;tan da gider.
               </span>
             </span>
           </label>

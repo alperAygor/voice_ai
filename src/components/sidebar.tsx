@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/lib/auth-actions";
 import { AutoLanguageSwitcher } from "@/components/language-switcher";
+import type { DashboardDictionary } from "@/lib/i18n/dashboard";
 
 type IconProps = { className?: string };
 
@@ -47,82 +48,94 @@ const icons = {
 };
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Genel Bakış", icon: icons.overview },
-  { href: "/dashboard/calls", label: "Aramalar", icon: icons.calls },
-  { href: "/dashboard/appointments", label: "Randevular", icon: icons.appointments },
-  { href: "/dashboard/agent-settings", label: "Agent Ayarları", icon: icons.agent },
-  { href: "/dashboard/guide", label: "Kurulum", icon: icons.guide },
-  { href: "/dashboard/billing", label: "Faturalandırma", icon: icons.billing },
-  { href: "/dashboard/account", label: "Hesap", icon: icons.account },
-];
+  { href: "/dashboard", labelKey: "overview", icon: icons.overview },
+  { href: "/dashboard/calls", labelKey: "calls", icon: icons.calls },
+  { href: "/dashboard/appointments", labelKey: "appointments", icon: icons.appointments },
+  { href: "/dashboard/agent-settings", labelKey: "agentSettings", icon: icons.agent },
+  { href: "/dashboard/guide", labelKey: "setup", icon: icons.guide },
+  { href: "/dashboard/billing", labelKey: "billing", icon: icons.billing },
+  { href: "/dashboard/account", labelKey: "account", icon: icons.account },
+] as const;
 
-export function Sidebar({ businessName, isAdmin }: { businessName: string; isAdmin?: boolean }) {
+type SidebarDictionary = DashboardDictionary["sidebar"];
+
+export function Sidebar({
+  businessName,
+  dictionary,
+  isAdmin,
+}: {
+  businessName: string;
+  dictionary: SidebarDictionary;
+  isAdmin?: boolean;
+}) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-gray-200 bg-white">
-      {/* Marka */}
-      <div className="flex items-center gap-2 px-5 py-4">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-sm font-semibold text-white">
+    <aside className="sticky top-0 z-20 flex w-full shrink-0 flex-col border-b border-gray-200 bg-white/90 shadow-sm shadow-slate-900/5 backdrop-blur lg:h-screen lg:w-64 lg:border-b-0 lg:border-r">
+      <div className="flex items-center gap-2 px-4 py-3.5 sm:px-5 lg:py-4">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20">
           V
         </span>
         <span className="font-semibold text-gray-900">Voxa</span>
       </div>
 
-      {/* İşletme adı */}
-      <div className="mx-3 mb-2 rounded-lg bg-gray-50 px-3 py-2">
-        <p className="text-[11px] uppercase tracking-wide text-gray-400">İşletme</p>
+      <div className="mx-3 mb-2 rounded-lg border border-gray-100 bg-slate-50/80 px-3 py-2">
+        <p className="text-[11px] uppercase tracking-wide text-gray-400">{dictionary.business}</p>
         <p className="truncate text-sm font-medium text-gray-800">{businessName}</p>
       </div>
 
-      <nav className="flex-1 space-y-0.5 px-3 py-2">
+      <nav className="flex gap-1 overflow-x-auto px-3 py-2 lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-visible">
         {NAV_ITEMS.map((item) => {
           const active =
             item.href === "/dashboard"
               ? pathname === "/dashboard"
               : pathname.startsWith(item.href);
           const Icon = item.icon;
+          const label = dictionary.nav[item.labelKey];
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`group relative flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors lg:gap-3 ${
                 active
-                  ? "bg-indigo-50 text-indigo-700"
+                  ? "bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-900/5"
                   : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
+              {active && (
+                <span className="absolute inset-y-2 left-0 hidden w-1 rounded-full bg-indigo-600 lg:block" />
+              )}
               <Icon className={`h-5 w-5 ${active ? "text-indigo-600" : "text-gray-400"}`} />
-              {item.label}
+              <span className="whitespace-nowrap">{label}</span>
             </Link>
           );
         })}
 
         {isAdmin && (
-          <div className="mt-4 border-t border-gray-100 pt-4">
+          <div className="mt-0 shrink-0 border-l border-gray-100 pl-2 lg:mt-4 lg:border-l-0 lg:border-t lg:pl-0 lg:pt-4">
             <Link
               href="/admin"
-              className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
             >
               <span className="grid h-5 w-5 place-items-center rounded bg-gray-900 text-[10px] font-semibold text-white">
                 A
               </span>
-              Admin Panel
+              {dictionary.adminPanel}
             </Link>
           </div>
         )}
       </nav>
 
-      <div className="border-t border-gray-200 p-3">
-        <div className="mb-3 rounded-lg bg-gray-50 px-3 py-2">
-          <AutoLanguageSwitcher compact />
+      <div className="hidden border-t border-gray-200 p-3 lg:block">
+        <div className="mb-3 rounded-lg border border-gray-100 bg-slate-50/80 px-3 py-2">
+          <AutoLanguageSwitcher label={dictionary.language} compact />
         </div>
         <form action={signOut}>
           <button
             type="submit"
             className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-600 hover:bg-gray-100"
           >
-            Çıkış yap
+            {dictionary.logout}
           </button>
         </form>
       </div>

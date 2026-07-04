@@ -3,6 +3,9 @@ export type ParsedVapiToolCall = {
   callId: string | null;
   callerNumber: string | null;
   functionName: string | null;
+  // Yeni "tool-calls" formatında her çağrının bir id'si var; yanıtı
+  // { results: [{ toolCallId, result }] } şeklinde döndürmek için gerekli.
+  toolCallId: string | null;
   parameters: Record<string, unknown>;
 };
 
@@ -51,6 +54,7 @@ export function parseVapiToolCallMessage(rawBody: unknown): ParsedVapiToolCall {
     assistantId: getString(call.assistantId),
     callId: getString(call.id),
     callerNumber: getString(customer.number),
+    toolCallId: getString(toolCall?.id) ?? getString(toolCall?.toolCallId),
     functionName:
       getString(toolCall?.name) ??
       getString(nestedFunction?.name) ??

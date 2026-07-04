@@ -38,6 +38,8 @@ export type VapiAssistantConfig = {
   serverUrl: string;
   functions: VapiFunctionDef[];
   escalate?: boolean;
+  // İşletmeye özel ses (ElevenLabs voiceId). Verilmezse env / varsayılan.
+  voiceId?: string;
 };
 
 function assistantPayload(config: VapiAssistantConfig) {
@@ -61,7 +63,8 @@ function assistantPayload(config: VapiAssistantConfig) {
       // ElevenLabs (ücretli plan) anahtarı ekli olmalı. Turbo v2.5, dil
       // zorlamasını (config.language ISO 639-1) destekleyen tek model.
       provider: "11labs",
-      voiceId: process.env.VAPI_ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvDq8ikWAM",
+      voiceId:
+        config.voiceId ?? process.env.VAPI_ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvDq8ikWAM",
       model: "eleven_turbo_v2_5",
       language: config.language,
     },

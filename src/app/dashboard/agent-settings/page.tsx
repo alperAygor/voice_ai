@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { AgentSettingsForm } from "./form";
 import Link from "next/link";
 import { normalizeNotificationPreferences } from "@/lib/notifications/preferences";
+import { DEFAULT_VOICE_ID } from "@/lib/vapi/voices";
+import { AgentWebTest } from "@/components/agent-web-test";
 
 export default async function AgentSettingsPage() {
   const supabase = await createClient();
@@ -17,7 +19,7 @@ export default async function AgentSettingsPage() {
 
   const { data: agentConfig } = await supabase
     .from("agent_config")
-    .select("language, greeting_message, escalation_rules, system_prompt")
+    .select("language, voice_id, greeting_message, escalation_rules, system_prompt, vapi_assistant_id")
     .eq("business_id", business!.id)
     .single();
 
@@ -25,11 +27,14 @@ export default async function AgentSettingsPage() {
     (agentConfig?.escalation_rules as {
       emergency_definition?: string;
       transfer_rule?: string;
+      transfer_phone_number?: string;
       response_style?: "concise" | "balanced";
       custom_instructions?: string;
+      after_hours_behavior?: "book_anytime" | "restricted";
       sms_appointment_confirmations?: boolean;
       whatsapp_appointment_confirmations?: boolean;
       sms_call_followups?: boolean;
+      whatsapp_call_followups?: boolean;
     } | null) ?? {};
   const notificationPreferences = normalizeNotificationPreferences(escalationRules);
 
@@ -62,6 +67,12 @@ export default async function AgentSettingsPage() {
             </p>
           )}
         </div>
+
+        {/* AI'ı tarayıcıda test et — Vapi web call */}
+        <AgentWebTest
+          assistantId={agentConfig?.vapi_assistant_id ?? null}
+          publicKey={process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY ?? null}
+        />
 
         {/* Google Takvim — kullanıcı kendi hesabını bağlar */}
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
@@ -105,9 +116,12 @@ export default async function AgentSettingsPage() {
         {/* Konuşma ayarları */}
         <AgentSettingsForm
           initialLanguage={agentConfig?.language ?? "tr"}
+          initialVoiceId={agentConfig?.voice_id ?? DEFAULT_VOICE_ID}
+          initialAfterHoursBehavior={escalationRules.after_hours_behavior ?? "book_anytime"}
           initialGreeting={agentConfig?.greeting_message ?? ""}
           initialEmergencyDefinition={escalationRules.emergency_definition ?? ""}
           initialTransferRule={escalationRules.transfer_rule ?? ""}
+          initialTransferPhoneNumber={escalationRules.transfer_phone_number ?? ""}
           initialResponseStyle={escalationRules.response_style ?? "concise"}
           initialCustomInstructions={escalationRules.custom_instructions ?? ""}
           initialSmsAppointmentConfirmations={
@@ -117,6 +131,7 @@ export default async function AgentSettingsPage() {
             notificationPreferences.whatsappAppointmentConfirmations
           }
           initialSmsCallFollowups={notificationPreferences.smsCallFollowups}
+          initialWhatsappCallFollowups={notificationPreferences.whatsappCallFollowups}
           whatsappConfigured={Boolean(process.env.TWILIO_WHATSAPP_FROM)}
           currentSystemPrompt={agentConfig?.system_prompt ?? ""}
         />

@@ -18,6 +18,7 @@ export async function parseFunctionCall(req: Request) {
     vapiCallId: parsed.callId ?? undefined,
     callerNumber: parsed.callerNumber,
     functionName: parsed.functionName ?? undefined,
+    toolCallId: parsed.toolCallId,
     parameters: parsed.parameters,
     rawMessage: body,
   };

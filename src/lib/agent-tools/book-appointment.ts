@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrCreateCallRow } from "./calls";
-import { sendAndLogMessage, sendAndLogSms } from "@/lib/notifications/sms";
+import { dispatchCustomerMessage } from "@/lib/notifications/sms";
 import { notifyOwnerOfAppointment } from "@/lib/notifications/owner";
 import { isCalendarConnected, createCalendarEvent } from "@/lib/google-calendar";
 import { assertAppointmentSlotAvailable } from "@/lib/appointments/conflicts";
@@ -104,29 +104,15 @@ export async function bookAppointment(
       }),
     });
 
-    if (notificationPreferences.smsAppointmentConfirmations) {
-      await sendAndLogSms({
-        businessId,
-        callId,
-        appointmentId: appointment.id,
-        toPhone: input.customer_phone,
-        body: messageBody,
-      });
-    }
-
-    if (
-      notificationPreferences.whatsappAppointmentConfirmations &&
-      process.env.TWILIO_WHATSAPP_FROM
-    ) {
-      await sendAndLogMessage({
-        businessId,
-        callId,
-        appointmentId: appointment.id,
-        toPhone: input.customer_phone,
-        body: messageBody,
-        channel: "whatsapp",
-      });
-    }
+    await dispatchCustomerMessage({
+      businessId,
+      callId,
+      appointmentId: appointment.id,
+      toPhone: input.customer_phone,
+      body: messageBody,
+      smsEnabled: notificationPreferences.smsAppointmentConfirmations,
+      whatsappEnabled: notificationPreferences.whatsappAppointmentConfirmations,
+    });
   } catch (err) {
     console.error("Müşteri randevu bildirimi gönderilemedi:", err);
   }

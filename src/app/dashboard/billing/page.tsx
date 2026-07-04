@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { BillingActions } from "./billing-actions";
-import { getBillingMonth, PLAN_INCLUDED_MINUTES, OVERAGE_RATE_USD } from "@/lib/billing/usage";
+import { getBillingMonth } from "@/lib/billing/usage";
 import { getInvoiceStatusLabel, type BillingInvoice } from "@/lib/billing/invoice-format";
 import { listCustomerInvoices } from "@/lib/stripe";
-import { DEFAULT_PLAN } from "@/lib/billing/plans";
+import { getPlanDefinition, isPlanId, DEFAULT_PLAN_ID } from "@/lib/billing/plans";
 
 export default async function BillingPage() {
   const supabase = await createClient();
@@ -13,11 +13,14 @@ export default async function BillingPage() {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("id, subscription_status, stripe_customer_id")
+    .select("id, subscription_status, stripe_customer_id, plan_id")
     .eq("owner_user_id", user.id)
     .single();
 
   if (!business) return null;
+
+  const currentPlanId = isPlanId(business.plan_id) ? business.plan_id : DEFAULT_PLAN_ID;
+  const currentPlan = getPlanDefinition(currentPlanId);
 
   const billingMonth = getBillingMonth();
 
@@ -30,7 +33,8 @@ export default async function BillingPage() {
 
   const minutesUsed = Number(usage?.total_minutes ?? 0);
   const overageCostUsd = Number(usage?.overage_cost_usd ?? 0);
-  const minutesLimit = DEFAULT_PLAN.includedMinutes;
+  const minutesLimit = currentPlan.includedMinutes;
+  const overageRateUsd = currentPlan.overageRateUsd;
   const progressPercent = Math.min(100, Math.max(0, (minutesUsed / minutesLimit) * 100));
   const isOverLimit = minutesUsed > minutesLimit;
   
@@ -57,23 +61,29 @@ export default async function BillingPage() {
           <h2 className="text-base font-medium text-gray-900">Mevcut Plan</h2>
           
           <div className="mt-4 flex items-center justify-between">
-            <span className="text-2xl font-bold text-gray-900">{DEFAULT_PLAN.name}</span>
+            <span className="text-2xl font-bold text-gray-900">{currentPlan.name}</span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-              hasSubscription 
-                ? "bg-green-100 text-green-800" 
-                : business.subscription_status === "past_due" 
-                  ? "bg-red-100 text-red-800" 
+              hasSubscription
+                ? "bg-green-100 text-green-800"
+                : business.subscription_status === "past_due"
+                  ? "bg-red-100 text-red-800"
                   : "bg-gray-100 text-gray-800"
             }`}>
               {hasSubscription ? "Aktif" : business.subscription_status === "past_due" ? "Ödeme Gecikti" : "Aktif Değil"}
             </span>
           </div>
-          
+
           <p className="mt-2 text-sm text-gray-500">
-            ${DEFAULT_PLAN.priceUsd}/ay • {PLAN_INCLUDED_MINUTES} dakika dahil
+            ${currentPlan.priceUsd}/ay • {minutesLimit} dakika dahil
           </p>
-          
-          <BillingActions hasSubscription={hasSubscription} planPriceUsd={DEFAULT_PLAN.priceUsd} />
+
+          {hasSubscription ? (
+            <BillingActions hasSubscription currentPlanId={currentPlanId} />
+          ) : (
+            <p className="mt-4 text-sm text-gray-500">
+              Aktif aboneliğiniz yok. Aşağıdan bir plan seçin.
+            </p>
+          )}
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -99,7 +109,7 @@ export default async function BillingPage() {
                 Aşım Ücreti: ${overageCostUsd.toFixed(2)}
               </p>
               <p className="text-xs text-red-600 mt-1">
-                Aşım dakikaları {"$"}{OVERAGE_RATE_USD.toFixed(2)}/dk olarak ücretlendirilir.
+                Aşım dakikaları {"$"}{overageRateUsd.toFixed(2)}/dk olarak ücretlendirilir.
               </p>
             </div>
           )}
@@ -107,11 +117,22 @@ export default async function BillingPage() {
           {!isOverLimit && (
             <p className="mt-4 text-xs text-gray-500">
               Kalan {Math.max(0, minutesLimit - minutesUsed)} dakikanız var.
-              Aşım durumunda dakika başına {"$"}{OVERAGE_RATE_USD.toFixed(2)} ücretlendirilirsiniz.
+              Aşım durumunda dakika başına {"$"}{overageRateUsd.toFixed(2)} ücretlendirilirsiniz.
             </p>
           )}
         </div>
       </div>
+
+      {!hasSubscription && (
+        <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-base font-medium text-gray-900">Plan Seçin</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            İşletmenize uygun planı seçip aboneliği başlatın. Planınızı daha sonra
+            Stripe portalından değiştirebilirsiniz.
+          </p>
+          <BillingActions hasSubscription={false} currentPlanId={currentPlanId} />
+        </div>
+      )}
 
       <div className="mt-8 rounded-lg border border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-200 px-6 py-4">

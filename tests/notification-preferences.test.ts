@@ -15,11 +15,13 @@ test("normalizeNotificationPreferences reads explicit boolean settings only", ()
       sms_appointment_confirmations: false,
       whatsapp_appointment_confirmations: true,
       sms_call_followups: false,
+      whatsapp_call_followups: false,
     }),
     {
       smsAppointmentConfirmations: false,
       whatsappAppointmentConfirmations: true,
       smsCallFollowups: false,
+      whatsappCallFollowups: false,
     }
   );
 

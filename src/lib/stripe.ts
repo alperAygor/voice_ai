@@ -44,7 +44,12 @@ export async function getOrCreateStripeCustomer(businessId: string, email: strin
   return customer.id;
 }
 
-export async function createCheckoutSession(customerId: string, priceId: string, businessId: string) {
+export async function createCheckoutSession(
+  customerId: string,
+  priceId: string,
+  businessId: string,
+  planId: string
+) {
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
@@ -60,7 +65,12 @@ export async function createCheckoutSession(customerId: string, priceId: string,
     client_reference_id: businessId,
     metadata: {
       businessId,
-    }
+      planId,
+    },
+    // Aboneliğe de plan bilgisini iliştir — subscription webhook'larında okunur.
+    subscription_data: {
+      metadata: { businessId, planId },
+    },
   });
 
   return session;

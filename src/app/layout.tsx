@@ -14,8 +14,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
+    <html lang="tr" className="h-full scroll-pt-24 antialiased">
+      <body className="app-shell-bg min-h-full flex flex-col text-gray-900">
         <PageTransition>{children}</PageTransition>
       </body>
     </html>

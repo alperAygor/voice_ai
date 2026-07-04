@@ -76,7 +76,20 @@ const tr = {
     ],
   },
   ctaBand: { title: "Bir sonraki aramayı kaçırmayın", subtitle: "Dakikalar içinde kurun, ilk günden aramaları AI karşılasın.", cta: "Hemen başla" },
-  footer: { tagline: "Ev hizmetleri için sesli AI resepsiyonist.", rights: "Tüm hakları saklıdır." },
+  footer: {
+    tagline: "Ev hizmetleri için sesli AI resepsiyonist.",
+    rights: "Tüm hakları saklıdır.",
+    product: "Ürün",
+    accountSupport: "Hesap & destek",
+    legal: "Hukuki",
+    dashboard: "Panel",
+    setupGuide: "Kurulum rehberi",
+    support: "Destek",
+    privacy: "Gizlilik Politikası",
+    kvkk: "KVKK Aydınlatma Metni",
+    terms: "Kullanım Şartları",
+    cookies: "Çerez Politikası",
+  },
 };
 
 const en: typeof tr = {
@@ -142,7 +155,20 @@ const en: typeof tr = {
     ],
   },
   ctaBand: { title: "Don't miss the next call", subtitle: "Set up in minutes, let the AI answer from day one.", cta: "Get started" },
-  footer: { tagline: "AI voice receptionist for home services.", rights: "All rights reserved." },
+  footer: {
+    tagline: "AI voice receptionist for home services.",
+    rights: "All rights reserved.",
+    product: "Product",
+    accountSupport: "Account & support",
+    legal: "Legal",
+    dashboard: "Dashboard",
+    setupGuide: "Setup guide",
+    support: "Support",
+    privacy: "Privacy Policy",
+    kvkk: "KVKK Notice",
+    terms: "Terms of Use",
+    cookies: "Cookie Policy",
+  },
 };
 
 const DICTIONARIES: Record<Locale, typeof tr> = { tr, en };

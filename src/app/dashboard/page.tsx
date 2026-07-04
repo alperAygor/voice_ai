@@ -8,9 +8,14 @@ import {
   extractAiImprovementInsights,
 } from "@/lib/dashboard/metrics";
 import { buildSetupChecklist } from "@/lib/onboarding/checklist";
+import { getDashboardDictionary } from "@/lib/i18n/dashboard";
+import { getRequestLocale } from "@/lib/i18n/server";
 import Link from "next/link";
 
 export default async function DashboardOverviewPage() {
+  const locale = await getRequestLocale();
+  const dictionary = getDashboardDictionary(locale);
+  const t = dictionary.overview;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -110,76 +115,67 @@ export default async function DashboardOverviewPage() {
     }
   });
 
-  const OUTCOME_LABELS: Record<string, string> = {
-    appointment_booked: "Randevu",
-    info_provided: "Bilgi verildi",
-    transferred_to_human: "İnsana aktarıldı",
-    missed: "Cevapsız",
-    emergency_flagged: "Acil",
-    voicemail: "Sesli mesaj"
-  };
-
   const outcomeData = Array.from(outcomeMap.entries())
     .map(([name, value]) => ({
-      name: OUTCOME_LABELS[name] || name,
+      name: t.outcomes[name as keyof typeof t.outcomes] || name,
       value
     }))
     .sort((a, b) => b.value - a.value);
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold">Genel Bakış</h1>
+    <div className="pb-10">
+      <h1 className="text-2xl font-semibold tracking-tight text-gray-950">{t.title}</h1>
       <p className="mt-1 text-sm text-gray-500">
-        İşletmenizin VoiceAI performansı.
+        {t.subtitle}
       </p>
 
-      <SetupChecklistPanel checklist={checklist} />
+      <SetupChecklistPanel checklist={checklist} dictionary={dictionary.setupChecklist} />
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <StatsCard title="Bu ay gelen arama" value={totalCalls} />
-        <StatsCard title="Dönüşüm oranı" value={`${conversionRate}%`} subtitle={`${appointmentCalls} randevu`} />
-        <StatsCard title="Çağrı kalite skoru" value={qualityScore ? `${qualityScore}/100` : "-"} />
-        <StatsCard title="Toplam dakika" value={totalMinutes} subtitle="Bu ay kullanılan" />
-        <StatsCard title="Tahmini maliyet" value={`$${totalCost.toFixed(2)}`} />
-        <StatsCard title="AI iyileştirme" value={aiInsights.length} subtitle="Son 30 gün sinyali" />
+        <StatsCard title={t.stats.monthlyCalls} value={totalCalls} />
+        <StatsCard title={t.stats.conversionRate} value={`${conversionRate}%`} subtitle={t.stats.appointmentSubtitle(appointmentCalls)} />
+        <StatsCard title={t.stats.qualityScore} value={qualityScore ? `${qualityScore}/100` : "-"} />
+        <StatsCard title={t.stats.totalMinutes} value={totalMinutes} subtitle={t.stats.totalMinutesSubtitle} />
+        <StatsCard title={t.stats.estimatedCost} value={`$${totalCost.toFixed(2)}`} />
+        <StatsCard title={t.stats.aiImprovement} value={aiInsights.length} subtitle={t.stats.aiImprovementSubtitle} />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Trend Grafiği */}
-        <div className="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-medium text-gray-900 mb-4">Arama Trendi (Son 30 Gün)</h2>
+        <div className="dashboard-card rounded-lg p-5">
+          <h2 className="text-base font-medium text-gray-900 mb-4">{t.charts.callTrend}</h2>
           {trendData.length > 0 && trendData.some(d => d.count > 0) ? (
             <CallTrendChart data={trendData} />
           ) : (
             <div className="flex h-72 items-center justify-center text-sm text-gray-500">
-              Yeterli veri yok
+              {t.charts.noData}
             </div>
           )}
         </div>
 
         {/* Dağılım Grafiği */}
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-medium text-gray-900 mb-4">Arama Sonuçları</h2>
+        <div className="dashboard-card rounded-lg p-5">
+          <h2 className="text-base font-medium text-gray-900 mb-4">{t.charts.outcomes}</h2>
           {outcomeData.length > 0 ? (
             <OutcomePieChart data={outcomeData} />
           ) : (
             <div className="flex h-72 items-center justify-center text-sm text-gray-500">
-              Yeterli veri yok
+              {t.charts.noData}
             </div>
           )}
         </div>
       </div>
 
-      <div className="mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="dashboard-card mt-8 rounded-lg p-5">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-base font-medium text-gray-900">AI İyileştirme Alanları</h2>
+            <h2 className="text-base font-medium text-gray-900">{t.aiInsights.title}</h2>
             <p className="mt-1 text-sm text-gray-500">
-              Son 30 gündeki analizlerden tekrarlayan koçluk fırsatları.
+              {t.aiInsights.subtitle}
             </p>
           </div>
           <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-            Kalite {qualityScore ? `${qualityScore}/100` : "-"}
+            {t.aiInsights.quality} {qualityScore ? `${qualityScore}/100` : "-"}
           </span>
         </div>
 
@@ -190,7 +186,7 @@ export default async function DashboardOverviewPage() {
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-sm font-medium text-gray-900">{insight.text}</p>
                   <span className="shrink-0 rounded-full bg-white px-2 py-1 text-xs font-medium text-gray-600">
-                    {insight.count} kez
+                    {insight.count} {t.aiInsights.countSuffix}
                   </span>
                 </div>
               </div>
@@ -198,31 +194,33 @@ export default async function DashboardOverviewPage() {
           </div>
         ) : (
           <div className="mt-5 rounded-md border border-dashed border-gray-300 p-5 text-sm text-gray-500">
-            Henüz belirgin bir AI iyileştirme sinyali yok.
+            {t.aiInsights.empty}
           </div>
         )}
       </div>
 
-      <div className="mt-8 rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="dashboard-card mt-8 overflow-hidden rounded-lg">
         <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-base font-medium text-gray-900">Son Aramalar</h2>
+          <h2 className="text-base font-medium text-gray-900">{t.recentCalls.title}</h2>
           <Link href="/dashboard/calls" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-            Tümünü Gör &rarr;
+            {t.recentCalls.viewAll} &rarr;
           </Link>
         </div>
         
         {recentCalls && recentCalls.length > 0 ? (
           <div className="divide-y divide-gray-200">
             {recentCalls.map(call => {
-              const outcomeLabel = call.outcome ? (OUTCOME_LABELS[call.outcome] || call.outcome) : "Bilinmiyor";
+              const outcomeLabel = call.outcome
+                ? (t.outcomes[call.outcome as keyof typeof t.outcomes] || call.outcome)
+                : t.outcomes.unknown;
               const isSuccess = call.outcome === "appointment_booked";
               
               return (
                 <div key={call.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors">
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium text-gray-900">{call.caller_number || "Bilinmeyen numara"}</span>
+                    <span className="font-medium text-gray-900">{call.caller_number || t.recentCalls.unknownNumber}</span>
                     <span className="text-sm text-gray-500">
-                      {call.started_at ? new Date(call.started_at).toLocaleString("tr-TR") : ""}
+                      {call.started_at ? new Date(call.started_at).toLocaleString(locale === "tr" ? "tr-TR" : "en-US") : ""}
                     </span>
                     {call.summary && (
                       <span className="text-sm text-gray-600 line-clamp-1 max-w-md mt-1">
@@ -237,7 +235,7 @@ export default async function DashboardOverviewPage() {
                       {outcomeLabel}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {call.duration_seconds ? `${Math.floor(call.duration_seconds / 60)} dk ${call.duration_seconds % 60} sn` : "-"}
+                      {call.duration_seconds ? `${Math.floor(call.duration_seconds / 60)} ${t.recentCalls.minute} ${call.duration_seconds % 60} ${t.recentCalls.second}` : "-"}
                     </span>
                   </div>
                 </div>
@@ -246,7 +244,7 @@ export default async function DashboardOverviewPage() {
           </div>
         ) : (
           <div className="p-8 text-center text-sm text-gray-500">
-            Henüz bağlı bir sesli AI agent&apos;ın yok. Agent Ayarları sayfasından kurulumu tamamladığında aramalar burada görünecek.
+            {t.recentCalls.empty}
           </div>
         )}
       </div>

@@ -12,9 +12,11 @@ export {
 import {
   calculateUsageTotals,
   getBillingMonth,
+  type PlanUsageTerms,
   type UsageSnapshot,
   type UsageTotals,
 } from "./usage-calculations";
+import { getPlanDefinition, isPlanId, DEFAULT_PLAN_ID } from "./plans";
 
 type UsageStore = {
   from: (table: "usage_billing") => {
@@ -32,12 +34,20 @@ type UsageStore = {
   };
 };
 
+// Bir işletmenin plan_id'sinden kullanım koşullarını (dahil dakika / aşım
+// ücreti) çözer. Geçersizse varsayılan plana düşer.
+export function resolvePlanTerms(planId: string | null | undefined): PlanUsageTerms {
+  const def = getPlanDefinition(isPlanId(planId) ? planId : DEFAULT_PLAN_ID);
+  return { includedMinutes: def.includedMinutes, overageRate: def.overageRateUsd };
+}
+
 export async function recordCallUsage(
   supabase: unknown,
   businessId: string,
   durationSeconds: number | null,
   costUsd: number,
-  occurredAt = new Date()
+  occurredAt = new Date(),
+  plan?: PlanUsageTerms
 ): Promise<void> {
   if (!durationSeconds || durationSeconds <= 0) return;
 
@@ -56,7 +66,7 @@ export async function recordCallUsage(
     throw new Error(readError.message);
   }
 
-  const totals = calculateUsageTotals(currentUsage, callMinutes, costUsd);
+  const totals = calculateUsageTotals(currentUsage, callMinutes, costUsd, plan);
   const writeResult = currentUsage?.id
     ? await usageStore
         .from("usage_billing")

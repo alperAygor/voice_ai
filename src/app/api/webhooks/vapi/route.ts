@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseFunctionCall } from "@/lib/vapi/parse-function-call";
+import { buildToolCallResponse } from "@/lib/vapi/tool-response";
 import { checkAvailability } from "@/lib/agent-tools/check-availability";
 import { bookAppointment } from "@/lib/agent-tools/book-appointment";
 import { markTransferred } from "@/lib/agent-tools/transfer";
@@ -11,6 +12,8 @@ import {
   markWebhookEventProcessed,
 } from "@/lib/webhooks/idempotency";
 import { getVapiEndOfCallEventId } from "@/lib/webhooks/event-ids";
+import { logEvent } from "@/lib/monitoring/logger";
+import { captureError } from "@/lib/monitoring/events";
 
 export async function POST(req: Request) {
   const secret = process.env.VAPI_WEBHOOK_SECRET;
@@ -22,9 +25,7 @@ export async function POST(req: Request) {
     // Secret ayarlı değilse webhook doğrulanmıyor — sahte veri POST edilebilir.
     // Production'da VAPI_WEBHOOK_SECRET mutlaka ayarlanmalı (assistant da bunu
     // gönderecek şekilde yeniden provision edilmeli).
-    console.warn(
-      "GÜVENLİK: VAPI_WEBHOOK_SECRET ayarlı değil — Vapi webhook'u doğrulanmadan işleniyor."
-    );
+    logEvent("warn", "vapi.webhook.secret_missing");
   }
 
   const clone = req.clone();
@@ -35,21 +36,30 @@ export async function POST(req: Request) {
     case "function-call":
     case "tool-call":
     case "tool-calls": {
-      const { businessId, vapiCallId, callerNumber, functionName, parameters } =
+      const { businessId, vapiCallId, callerNumber, functionName, toolCallId, parameters } =
         await parseFunctionCall(clone);
 
       if (!businessId) {
-        return NextResponse.json({ result: "İşletme bulunamadı." }, { status: 404 });
+        logEvent("warn", "vapi.tool_call.business_missing", { functionName });
+        return NextResponse.json(
+          buildToolCallResponse("İşletme bulunamadı.", toolCallId),
+          { status: 404 }
+        );
       }
 
       try {
+        logEvent("info", "vapi.tool_call.received", {
+          businessId,
+          vapiCallId,
+          functionName,
+        });
         switch (functionName) {
           case "get_customer_context": {
             const phone = parameters.customer_phone
               ? String(parameters.customer_phone)
               : callerNumber;
             const context = await getCustomerContext(businessId, phone);
-            return NextResponse.json({ result: context });
+            return NextResponse.json(buildToolCallResponse(context, toolCallId));
           }
           case "check_availability": {
             const { slots } = await checkAvailability(
@@ -57,7 +67,7 @@ export async function POST(req: Request) {
               String(parameters.date_range_start),
               String(parameters.date_range_end)
             );
-            return NextResponse.json({ result: { slots } });
+            return NextResponse.json(buildToolCallResponse({ slots }, toolCallId));
           }
           case "book_appointment": {
             if (!vapiCallId) break;
@@ -71,30 +81,50 @@ export async function POST(req: Request) {
               scheduled_at: String(parameters.scheduled_at),
               notes: parameters.notes ? String(parameters.notes) : undefined,
             });
-            return NextResponse.json({ result: { appointmentId, status: "confirmed" } });
+            return NextResponse.json(
+              buildToolCallResponse({ appointmentId, status: "confirmed" }, toolCallId)
+            );
           }
           case "transfer_to_human": {
             if (!vapiCallId) break;
-            await markTransferred(
+            const { transferNumber } = await markTransferred(
               businessId,
               vapiCallId,
               callerNumber,
               String(parameters.reason ?? "Belirtilmedi")
             );
-            return NextResponse.json({ result: "Görüşme bir çalışana aktarılıyor." });
+            return NextResponse.json(
+              buildToolCallResponse(
+                {
+                  message: "Görüşme bir çalışana aktarılıyor.",
+                  ...(transferNumber ? { transferNumber } : {}),
+                },
+                toolCallId
+              )
+            );
           }
         }
       } catch (err) {
-        console.error(`Vapi function-call (${functionName}) hatası:`, err);
-        return NextResponse.json({ result: "İşlem sırasında bir hata oluştu." }, { status: 500 });
+        await captureError("vapi.tool_call.failed", err, {
+          businessId,
+          context: { vapiCallId: vapiCallId ?? null, functionName },
+        });
+        return NextResponse.json(
+          buildToolCallResponse("İşlem sırasında bir hata oluştu.", toolCallId),
+          { status: 500 }
+        );
       }
 
-      return NextResponse.json({ result: "Bilinmeyen fonksiyon." }, { status: 400 });
+      return NextResponse.json(
+        buildToolCallResponse("Bilinmeyen fonksiyon.", toolCallId),
+        { status: 400 }
+      );
     }
 
     case "end-of-call-report": {
       const callId = message.call?.id as string | undefined;
       if (!callId) {
+        logEvent("warn", "vapi.end_of_call.call_id_missing");
         return NextResponse.json({ received: true });
       }
 
@@ -105,16 +135,20 @@ export async function POST(req: Request) {
       });
 
       if (!claim.acquired) {
+        logEvent("info", "vapi.end_of_call.duplicate", { callId });
         return NextResponse.json({ received: true, duplicate: true });
       }
 
       try {
+        logEvent("info", "vapi.end_of_call.received", { callId });
         await handleEndOfCallReport(message);
         if (claim.recordId) {
           await markWebhookEventProcessed(claim.recordId);
         }
       } catch (err) {
-        console.error("end-of-call-report işlenemedi:", err);
+        await captureError("vapi.end_of_call.failed", err, {
+          context: { callId },
+        });
         if (claim.recordId) {
           await markWebhookEventFailed(claim.recordId);
         }
